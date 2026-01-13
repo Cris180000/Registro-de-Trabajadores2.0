@@ -1,0 +1,59 @@
+# Ignorar todo excepto los archivos del proyecto
+*
+
+# Pero incluir estos archivos del proyecto
+!.gitignore
+!README.md
+!Registro-trabajadores.html
+
+# Ignorar directorios del sistema
+AppData/
+OneDrive/
+Downloads/
+.vscode/
+.windsurf/
+.cursor/
+.codeium/
+.codegpt/
+.m2/
+.nbi/
+.VirtualBox/
+.afirma/
+.docker/
+.dropbox_bi/
+.dotnet/
+.html/
+.pdfbox.cache/
+source/
+vscode-remote-wsl/
+dropbox Dropbox/
+infatica-service-app.dat
+*.dat
+*.log
+*.LOG*
+*.blf
+*.regtrans-ms
+*.ini
+NTUSER.*
+IntelGraphicsProfiles/
+Links/
+MediaGet2/
+Music/
+Saved Games/
+Searches/
+Videos/
+3D Objects/
+Favorites/
+Configuración local/
+Cookies/
+Datos de programa/
+Documents/Mi música/
+Documents/Mis imágenes/
+Documents/Mis vídeos/
+Entorno de red/
+Impresoras/
+Menú Inicio/
+Mis documentos/
+Plantillas/
+Reciente/
+SendTo/
