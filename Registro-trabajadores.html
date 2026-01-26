@@ -1,2 +1,368 @@
-// registro de trabajadores
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Trabajadores Agrícolas</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-seedling"></i> Gestión de Trabajadores Agrícolas</h1>
+            <p class="subtitle">Registro de horas y cálculo de sueldos</p>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="AppGestion.mostrarBackup()" data-tooltip="Backup/Restaurar datos (Ctrl+E)">
+                    <i class="fas fa-database"></i> Backup
+                </button>
+                <button class="btn btn-secondary" onclick="AppGestion.mostrarConfiguracion()" data-tooltip="Configuración">
+                    <i class="fas fa-cog"></i> Config
+                </button>
+                <button class="btn btn-secondary" onclick="AppGestion.toggleTema()" data-tooltip="Cambiar entre tema claro/oscuro">
+                    <i class="fas fa-moon" id="icono-tema"></i>
+                </button>
+            </div>
+        </header>
 
+        <!-- Dashboard de Estadísticas -->
+        <section class="card dashboard-card" id="dashboard">
+            <h2><i class="fas fa-chart-line"></i> Dashboard</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="stat-trabajadores">0</div>
+                        <div class="stat-label">Trabajadores</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="stat-horas-mes">0</div>
+                        <div class="stat-label">Horas este mes</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-euro-sign"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="stat-sueldo-mes">0€</div>
+                        <div class="stat-label">Sueldo este mes</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="stat-dias-registrados">0</div>
+                        <div class="stat-label">Días registrados</div>
+                    </div>
+                </div>
+            </div>
+            <div class="charts-container">
+                <div class="chart-wrapper">
+                    <canvas id="chartHoras"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="chartSueldos"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección: Agregar Trabajador -->
+        <section class="card">
+            <h2><i class="fas fa-user-plus"></i> Agregar Nuevo Trabajador</h2>
+            <form id="formTrabajador">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nombre"><i class="fas fa-user"></i> Nombre Completo:</label>
+                        <input type="text" id="nombre" required placeholder="Ej: Juan Pérez">
+                    </div>
+                    <div class="form-group">
+                        <label for="cedula"><i class="fas fa-id-card"></i> Cédula/ID:</label>
+                        <input type="text" id="cedula" required placeholder="Ej: 1234567890">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="telefono"><i class="fas fa-phone"></i> Teléfono:</label>
+                        <input type="tel" id="telefono" placeholder="Ej: +34 600 123 456">
+                    </div>
+                    <div class="form-group">
+                        <label for="email"><i class="fas fa-envelope"></i> Email:</label>
+                        <input type="email" id="email" placeholder="Ej: juan@email.com">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="direccion"><i class="fas fa-map-marker-alt"></i> Dirección:</label>
+                    <input type="text" id="direccion" placeholder="Ej: Calle Principal 123, Ciudad">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fechaNacimiento"><i class="fas fa-birthday-cake"></i> Fecha de Nacimiento:</label>
+                        <input type="date" id="fechaNacimiento">
+                    </div>
+                    <div class="form-group">
+                        <label for="fechaContratacion"><i class="fas fa-calendar-check"></i> Fecha de Contratación:</label>
+                        <input type="date" id="fechaContratacion" max="">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="salarioHora"><i class="fas fa-euro-sign"></i> Salario por Hora (€):</label>
+                        <input type="number" id="salarioHora" step="0.01" min="0" max="1000" required placeholder="Ej: 15.50">
+                    </div>
+                    <div class="form-group">
+                        <label for="salarioHoraExtra"><i class="fas fa-clock"></i> Salario Hora Extra (€):</label>
+                        <input type="number" id="salarioHoraExtra" step="0.01" min="0" max="1000" placeholder="Ej: 23.25 (opcional)">
+                        <small class="form-help">Dejar vacío para usar salario normal × 1.5</small>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="tipoTrabajo"><i class="fas fa-seedling"></i> Tipo de Trabajo:</label>
+                    <select id="tipoTrabajo" required>
+                        <option value="">Seleccione un tipo de trabajo</option>
+                    </select>
+                    <input type="text" id="tipoTrabajoOtro" placeholder="Especifique el tipo de trabajo" style="margin-top: 10px; display: none;">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="estado"><i class="fas fa-toggle-on"></i> Estado:</label>
+                        <select id="estado" required>
+                            <option value="activo" selected>Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                            <option value="baja">Baja</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fotoTrabajador"><i class="fas fa-camera"></i> Foto (URL):</label>
+                        <input type="url" id="fotoTrabajador" placeholder="https://ejemplo.com/foto.jpg">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="notasTrabajador"><i class="fas fa-sticky-note"></i> Notas/Observaciones:</label>
+                    <textarea id="notasTrabajador" rows="3" placeholder="Información adicional sobre el trabajador..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" data-tooltip="Agregar nuevo trabajador (Ctrl+N)">
+                    <i class="fas fa-plus"></i> Agregar Trabajador
+                </button>
+            </form>
+        </section>
+
+        <!-- Sección: Lista de Trabajadores -->
+        <section class="card">
+            <div class="section-header">
+                <h2><i class="fas fa-users"></i> Trabajadores Registrados</h2>
+                <div class="section-actions">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="buscarTrabajador" placeholder="Buscar por nombre, cédula, teléfono, email..." data-tooltip="Buscar trabajadores (Ctrl+F)">
+                    </div>
+                    <div class="search-box" style="margin-left: 10px;">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="buscarRegistros" placeholder="Buscar en registros..." data-tooltip="Buscar en registros de horas">
+                    </div>
+                    <div class="view-toggle">
+                        <button class="btn-icon active" id="btn-vista-grid" onclick="AppGestion.cambiarVista('grid')" title="Vista de tarjetas">
+                            <i class="fas fa-th"></i>
+                        </button>
+                        <button class="btn-icon" id="btn-vista-tabla" onclick="AppGestion.cambiarVista('table')" title="Vista de tabla">
+                            <i class="fas fa-table"></i>
+                        </button>
+                    </div>
+                    <select id="filtroTrabajo" class="form-control" style="width: auto;">
+                        <option value="">Todos los trabajos</option>
+                    </select>
+                    <select id="filtroEstado" class="form-control" style="width: auto;">
+                        <option value="">Todos los estados</option>
+                        <option value="activo">Activo</option>
+                        <option value="inactivo">Inactivo</option>
+                        <option value="baja">Baja</option>
+                    </select>
+                    <select id="ordenarTrabajadores" class="form-control" style="width: auto;">
+                        <option value="nombre">Ordenar por nombre</option>
+                        <option value="sueldo">Ordenar por sueldo</option>
+                        <option value="horas">Ordenar por horas</option>
+                        <option value="trabajo">Ordenar por trabajo</option>
+                        <option value="fechaContratacion">Ordenar por fecha contratación</option>
+                    </select>
+                </div>
+            </div>
+            <div id="listaTrabajadores" class="trabajadores-grid">
+                <!-- Los trabajadores se mostrarán aquí -->
+            </div>
+            <div id="tablaTrabajadores" class="tabla-trabajadores" style="display: none;">
+                <!-- Tabla se mostrará aquí -->
+            </div>
+        </section>
+
+        <!-- Sección: Registrar Horas -->
+        <section class="card" id="seccionRegistroHoras" style="display: none;">
+            <h2><i class="fas fa-clock"></i> Registrar Horas Trabajadas</h2>
+            <form id="formRegistroHoras">
+                <div class="form-group">
+                    <label for="trabajadorSelect"><i class="fas fa-user"></i> Trabajador:</label>
+                    <select id="trabajadorSelect" required>
+                        <option value="">Seleccione un trabajador</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="fecha"><i class="fas fa-calendar"></i> Fecha:</label>
+                    <input type="date" id="fecha" required max="">
+                </div>
+                <div class="form-group">
+                    <label for="trabajoRegistro"><i class="fas fa-seedling"></i> Tipo de Trabajo:</label>
+                    <select id="trabajoRegistro" required>
+                        <option value="">Seleccione un tipo de trabajo</option>
+                        <option value="Aceitunas">Aceitunas</option>
+                        <option value="Espárragos">Espárragos</option>
+                        <option value="Tomates">Tomates</option>
+                        <option value="Pimientos">Pimientos</option>
+                        <option value="Fresas">Fresas</option>
+                        <option value="Lechuga">Lechuga</option>
+                        <option value="Cebolla">Cebolla</option>
+                        <option value="Ajo">Ajo</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                    <input type="text" id="trabajoRegistroOtro" placeholder="Especifique el tipo de trabajo" style="margin-top: 10px; display: none;">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="horas"><i class="fas fa-hourglass-half"></i> Horas Normales:</label>
+                        <input type="number" id="horas" step="0.5" min="0" max="16" required placeholder="Ej: 8">
+                        <small class="form-help">Máximo 16 horas por día</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="horasExtras"><i class="fas fa-clock"></i> Horas Extras:</label>
+                        <input type="number" id="horasExtras" step="0.5" min="0" max="8" value="0" placeholder="Ej: 2">
+                        <small class="form-help">Horas adicionales con tarifa extra</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="bonificacion"><i class="fas fa-gift"></i> Bonificación (€):</label>
+                        <input type="number" id="bonificacion" step="0.01" min="0" value="0" placeholder="Ej: 50.00">
+                        <small class="form-help">Pago adicional opcional</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="descuento"><i class="fas fa-minus-circle"></i> Descuento (€):</label>
+                        <input type="number" id="descuento" step="0.01" min="0" value="0" placeholder="Ej: 20.00">
+                        <small class="form-help">Deducción opcional</small>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="tipoRegistro"><i class="fas fa-calendar-alt"></i> Tipo de Registro:</label>
+                    <select id="tipoRegistro">
+                        <option value="normal" selected>Día Normal</option>
+                        <option value="vacaciones">Vacaciones</option>
+                        <option value="día_libre">Día Libre</option>
+                        <option value="festivo">Festivo</option>
+                        <option value="ausencia">Ausencia</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="notas"><i class="fas fa-sticky-note"></i> Notas (opcional):</label>
+                    <textarea id="notas" rows="3" placeholder="Observaciones sobre el trabajo realizado..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-success" data-tooltip="Guardar registro de horas (Ctrl+S)">
+                    <i class="fas fa-save"></i> Registrar Horas
+                </button>
+            </form>
+        </section>
+
+        <!-- Sección: Resumen de Sueldos -->
+        <section class="card">
+            <div class="section-header">
+                <h2><i class="fas fa-money-bill-wave"></i> Resumen de Sueldos</h2>
+                <div class="export-actions">
+                    <button class="btn btn-secondary" onclick="ExportManager.exportarPDF()" data-tooltip="Exportar resumen a PDF">
+                        <i class="fas fa-file-pdf"></i> Exportar PDF
+                    </button>
+                    <button class="btn btn-secondary" onclick="ExportManager.mostrarImportar()" data-tooltip="Importar datos desde archivo JSON">
+                        <i class="fas fa-file-import"></i> Importar
+                    </button>
+                    <button class="btn btn-secondary" onclick="AppGestion.generarReporteAnual()" data-tooltip="Generar reporte anual completo (Ctrl+R)">
+                        <i class="fas fa-file-alt"></i> Reporte Anual
+                    </button>
+                </div>
+            </div>
+            <div class="filtros">
+                <div class="form-group">
+                    <label for="mesSelect">Mes:</label>
+                    <select id="mesSelect">
+                        <option value="">Todos los meses</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="anioSelect">Año:</label>
+                    <select id="anioSelect">
+                        <option value="">Todos los años</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="trabajadorFiltro">Trabajador:</label>
+                    <select id="trabajadorFiltro">
+                        <option value="">Todos los trabajadores</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="trabajoFiltroResumen"><i class="fas fa-seedling"></i> Tipo de Trabajo:</label>
+                    <select id="trabajoFiltroResumen">
+                        <option value="">Todos los trabajos</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="fechaDesde"><i class="fas fa-calendar-alt"></i> Desde:</label>
+                    <input type="date" id="fechaDesde">
+                </div>
+                <div class="form-group">
+                    <label for="fechaHasta"><i class="fas fa-calendar-alt"></i> Hasta:</label>
+                    <input type="date" id="fechaHasta">
+                </div>
+            </div>
+            <div id="resumenSueldos" class="resumen-container">
+                <!-- El resumen se mostrará aquí -->
+            </div>
+        </section>
+
+        <!-- Sección: Configuración -->
+        <section class="card" id="seccionConfiguracion" style="display: none;">
+            <h2><i class="fas fa-cog"></i> Configuración</h2>
+            <div class="config-section">
+                <h3><i class="fas fa-seedling"></i> Tipos de Trabajo</h3>
+                <div id="tiposTrabajoConfig">
+                    <!-- Se generará dinámicamente -->
+                </div>
+                <button class="btn btn-primary" onclick="AppGestion.agregarTipoTrabajo()">
+                    <i class="fas fa-plus"></i> Agregar Tipo de Trabajo
+                </button>
+            </div>
+            <div class="config-section" style="margin-top: 20px;">
+                <h3><i class="fas fa-bell"></i> Recordatorios</h3>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="recordatorioDiario"> Recordatorio diario de registro
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="alertasSinRegistro"> Alertas de trabajadores sin registros recientes
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Días sin registro para alerta:</label>
+                    <input type="number" id="diasAlerta" min="1" max="30" value="7">
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Scripts -->
+    <script src="utils.js"></script>
+    <script src="validations.js"></script>
+    <script src="modals.js"></script>
+    <script src="export.js"></script>
+    <script src="charts.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
