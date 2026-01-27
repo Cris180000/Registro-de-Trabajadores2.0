@@ -59,6 +59,35 @@
                     </div>
                 </div>
             </div>
+            <div class="comparativa-section" style="margin-top: 30px; padding: 20px; background: var(--verde-fondo-claro); border-radius: 10px; border: 2px solid var(--verde-medio);">
+                <h3 style="color: var(--verde-oscuro); margin-bottom: 20px; text-align: center;"><i class="fas fa-chart-bar"></i> Comparativa con Mes Anterior</h3>
+                <div class="stats-grid">
+                    <div class="stat-card comparativa-card">
+                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-horas-comparativa">0</div>
+                            <div class="stat-label">Horas</div>
+                            <div class="stat-change" id="stat-horas-cambio">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-card comparativa-card">
+                        <div class="stat-icon"><i class="fas fa-euro-sign"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-sueldo-comparativa">0€</div>
+                            <div class="stat-label">Sueldo</div>
+                            <div class="stat-change" id="stat-sueldo-cambio">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-card comparativa-card">
+                        <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-dias-comparativa">0</div>
+                            <div class="stat-label">Días</div>
+                            <div class="stat-change" id="stat-dias-cambio">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="charts-container">
                 <div class="chart-wrapper">
                     <canvas id="chartHoras"></canvas>
@@ -79,8 +108,14 @@
                         <input type="text" id="nombre" required placeholder="Ej: Juan Pérez">
                     </div>
                     <div class="form-group">
-                        <label for="cedula"><i class="fas fa-id-card"></i> Cédula/ID:</label>
-                        <input type="text" id="cedula" required placeholder="Ej: 1234567890">
+                        <label for="cedula"><i class="fas fa-id-card"></i> DNI:</label>
+                        <input type="text" id="cedula" required placeholder="Ej: 12345678A">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="numeroSeguridadSocial"><i class="fas fa-shield-alt"></i> Número de Seguridad Social:</label>
+                        <input type="text" id="numeroSeguridadSocial" placeholder="Ej: 12/1234567/12">
                     </div>
                 </div>
                 <div class="form-row">
@@ -107,17 +142,6 @@
                         <input type="date" id="fechaContratacion" max="">
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="salarioHora"><i class="fas fa-euro-sign"></i> Salario por Hora (€):</label>
-                        <input type="number" id="salarioHora" step="0.01" min="0" max="1000" required placeholder="Ej: 15.50">
-                    </div>
-                    <div class="form-group">
-                        <label for="salarioHoraExtra"><i class="fas fa-clock"></i> Salario Hora Extra (€):</label>
-                        <input type="number" id="salarioHoraExtra" step="0.01" min="0" max="1000" placeholder="Ej: 23.25 (opcional)">
-                        <small class="form-help">Dejar vacío para usar salario normal × 1.5</small>
-                    </div>
-                </div>
                 <div class="form-group">
                     <label for="tipoTrabajo"><i class="fas fa-seedling"></i> Tipo de Trabajo:</label>
                     <select id="tipoTrabajo" required>
@@ -125,19 +149,13 @@
                     </select>
                     <input type="text" id="tipoTrabajoOtro" placeholder="Especifique el tipo de trabajo" style="margin-top: 10px; display: none;">
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="estado"><i class="fas fa-toggle-on"></i> Estado:</label>
-                        <select id="estado" required>
-                            <option value="activo" selected>Activo</option>
-                            <option value="inactivo">Inactivo</option>
-                            <option value="baja">Baja</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="fotoTrabajador"><i class="fas fa-camera"></i> Foto (URL):</label>
-                        <input type="url" id="fotoTrabajador" placeholder="https://ejemplo.com/foto.jpg">
-                    </div>
+                <div class="form-group">
+                    <label for="estado"><i class="fas fa-toggle-on"></i> Estado:</label>
+                    <select id="estado" required>
+                        <option value="activo" selected>Activo</option>
+                        <option value="inactivo">Inactivo</option>
+                        <option value="baja">Baja</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="notasTrabajador"><i class="fas fa-sticky-note"></i> Notas/Observaciones:</label>
@@ -154,9 +172,12 @@
             <div class="section-header">
                 <h2><i class="fas fa-users"></i> Trabajadores Registrados</h2>
                 <div class="section-actions">
+                    <button class="btn btn-secondary" onclick="AppGestion.exportarTrabajadoresPDF()" data-tooltip="Exportar lista de trabajadores a PDF">
+                        <i class="fas fa-file-pdf"></i> Exportar PDF
+                    </button>
                     <div class="search-box">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="buscarTrabajador" placeholder="Buscar por nombre, cédula, teléfono, email..." data-tooltip="Buscar trabajadores (Ctrl+F)">
+                        <input type="text" id="buscarTrabajador" placeholder="Buscar por nombre, cédula, Nº SS, teléfono, email..." data-tooltip="Buscar trabajadores (Ctrl+F)">
                     </div>
                     <div class="search-box" style="margin-left: 10px;">
                         <i class="fas fa-search"></i>
@@ -225,6 +246,17 @@
                         <option value="Otro">Otro</option>
                     </select>
                     <input type="text" id="trabajoRegistroOtro" placeholder="Especifique el tipo de trabajo" style="margin-top: 10px; display: none;">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="salarioHora"><i class="fas fa-euro-sign"></i> Salario por Hora (€):</label>
+                        <input type="number" id="salarioHora" step="0.01" min="0" max="1000" required placeholder="Ej: 15.50">
+                    </div>
+                    <div class="form-group">
+                        <label for="salarioHoraExtra"><i class="fas fa-clock"></i> Salario Hora Extra (€):</label>
+                        <input type="number" id="salarioHoraExtra" step="0.01" min="0" max="1000" placeholder="Ej: 23.25 (opcional)">
+                        <small class="form-help">Dejar vacío para usar salario normal × 1.5</small>
+                    </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
