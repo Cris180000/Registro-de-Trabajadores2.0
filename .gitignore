@@ -5,6 +5,13 @@
 !.gitignore
 !README.md
 !Registro-trabajadores.html
+!styles.css
+!app.js
+!utils.js
+!validations.js
+!modals.js
+!export.js
+!charts.js
 
 # Ignorar directorios del sistema
 AppData/
