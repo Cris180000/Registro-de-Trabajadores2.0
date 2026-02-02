@@ -61,7 +61,7 @@ const ExportManager = {
                 doc.text(`${index + 1}. ${trabajador.nombre}`, 14, y);
                 y += 8;
                 doc.setFontSize(10);
-                doc.text(`Cédula: ${trabajador.cedula}`, 20, y);
+                doc.text(`DNI: ${trabajador.cedula}`, 20, y);
                 y += 6;
                 doc.text(`Horas: ${horas.toFixed(1)} | Sueldo: $${sueldo.toFixed(2)}`, 20, y);
                 y += 10;

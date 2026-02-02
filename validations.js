@@ -1,7 +1,7 @@
 // Validaciones Centralizadas
 
 const Validaciones = {
-    // Validar que no haya trabajador duplicado por cédula
+    // Validar que no haya trabajador duplicado por DNI
     validarCedulaUnica(cedula, trabajadorIdExcluir = null) {
         const trabajadores = JSON.parse(localStorage.getItem('trabajadores') || '[]');
         const existe = trabajadores.some(t => 
@@ -10,7 +10,7 @@ const Validaciones = {
         );
         return {
             valido: !existe,
-            mensaje: existe ? 'Ya existe un trabajador con esta cédula' : ''
+            mensaje: existe ? 'Ya existe un trabajador con este DNI' : ''
         };
     },
     
@@ -60,12 +60,12 @@ const Validaciones = {
         };
     },
     
-    // Validar cédula
+    // Validar DNI
     validarCedula(cedula) {
         const cedulaTrim = cedula.trim();
         return {
             valido: cedulaTrim.length >= 1,
-            mensaje: cedulaTrim.length < 1 ? 'La cédula no puede estar vacía' : ''
+            mensaje: cedulaTrim.length < 1 ? 'El DNI no puede estar vacío' : ''
         };
     },
     

@@ -300,7 +300,7 @@ const AppGestion = {
             }
             
             if (!cedula) {
-                Modal.alert('Por favor ingrese la cédula/ID del trabajador', 'error');
+                Modal.alert('Por favor ingrese el DNI del trabajador', 'error');
                 return;
             }
             
@@ -400,7 +400,7 @@ const AppGestion = {
                     <input type="text" id="editNombre" value="${trabajador.nombre}" required class="form-control">
                 </div>
                 <div class="form-group">
-                    <label>Cédula/ID:</label>
+                    <label>DNI:</label>
                     <input type="text" id="editCedula" value="${trabajador.cedula}" required class="form-control">
                 </div>
                 <div class="form-group">
@@ -1080,9 +1080,6 @@ const AppGestion = {
         const trabajadoresPagina = this.trabajadoresFiltrados.slice(inicio, fin);
         
         container.innerHTML = trabajadoresPagina.map(trabajador => {
-            const totalHoras = this.obtenerTotalHoras(trabajador.id);
-            const sueldoTotal = this.calcularSueldoTrabajador(trabajador.id);
-            const registros = this.obtenerRegistrosTrabajador(trabajador.id);
             const estado = trabajador.estado || 'activo';
             const estadoClass = estado === 'activo' ? 'success' : estado === 'inactivo' ? 'warning' : 'danger';
             const estadoIcon = estado === 'activo' ? 'fa-check-circle' : estado === 'inactivo' ? 'fa-pause-circle' : 'fa-times-circle';
@@ -1091,22 +1088,13 @@ const AppGestion = {
                 <div class="trabajador-card">
                     <h3>${trabajador.nombre} <span class="badge badge-${estadoClass}" style="font-size: 0.7em; padding: 3px 8px;"><i class="fas ${estadoIcon}"></i> ${estado}</span></h3>
                     <div class="trabajador-info">
-                        <strong><i class="fas fa-id-card"></i> Cédula:</strong> ${trabajador.cedula}
+                        <strong><i class="fas fa-id-card"></i> DNI:</strong> ${trabajador.cedula}
                     </div>
                     ${trabajador.numeroSeguridadSocial ? `<div class="trabajador-info"><strong><i class="fas fa-shield-alt"></i> Nº Seguridad Social:</strong> ${trabajador.numeroSeguridadSocial}</div>` : ''}
                     ${trabajador.telefono ? `<div class="trabajador-info"><strong><i class="fas fa-phone"></i> Teléfono:</strong> ${trabajador.telefono}</div>` : ''}
                     ${trabajador.email ? `<div class="trabajador-info"><strong><i class="fas fa-envelope"></i> Email:</strong> ${trabajador.email}</div>` : ''}
                     <div class="trabajador-info">
                         <strong><i class="fas fa-seedling"></i> Tipo de Trabajo:</strong> ${trabajador.tipoTrabajo || 'No especificado'}
-                    </div>
-                    <div class="trabajador-info">
-                        <strong><i class="fas fa-clock"></i> Total Horas:</strong> ${totalHoras.toFixed(1)} hrs
-                    </div>
-                    <div class="trabajador-info">
-                        <strong><i class="fas fa-money-bill-wave"></i> Sueldo Total:</strong> ${Utils.formatearMoneda(sueldoTotal)}
-                    </div>
-                    <div class="trabajador-info">
-                        <strong><i class="fas fa-calendar-day"></i> Registros:</strong> ${registros.length} días
                     </div>
                     <div class="acciones" style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
                         <button class="btn btn-primary" onclick="AppGestion.editarTrabajador('${trabajador.id}')" style="flex: 1; padding: 8px; min-width: 80px;">
@@ -1208,12 +1196,10 @@ const AppGestion = {
                 <thead>
                     <tr>
                         <th onclick="AppGestion.ordenarPorColumna('nombre')">Nombre</th>
-                        <th onclick="AppGestion.ordenarPorColumna('cedula')">Cédula</th>
+                        <th onclick="AppGestion.ordenarPorColumna('cedula')">DNI</th>
                         <th>Nº Seguridad Social</th>
                         <th onclick="AppGestion.ordenarPorColumna('trabajo')">Tipo de Trabajo</th>
                         <th onclick="AppGestion.ordenarPorColumna('salario')">Salario/Hora</th>
-                        <th onclick="AppGestion.ordenarPorColumna('horas')">Horas</th>
-                        <th onclick="AppGestion.ordenarPorColumna('sueldo')">Sueldo Total</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -1221,17 +1207,13 @@ const AppGestion = {
         `;
         
         trabajadoresPagina.forEach(trabajador => {
-            const totalHoras = this.obtenerTotalHoras(trabajador.id);
-            const sueldoTotal = this.calcularSueldoTrabajador(trabajador.id);
-            
             html += `
                 <tr>
                     <td>${trabajador.nombre}</td>
                     <td>${trabajador.cedula}</td>
                     <td>${trabajador.numeroSeguridadSocial || '-'}</td>
                     <td>${trabajador.tipoTrabajo || 'No especificado'}</td>
-                    <td>${totalHoras.toFixed(1)}</td>
-                    <td>${Utils.formatearMoneda(sueldoTotal)}</td>
+                    <td>${trabajador.salarioHora != null ? Utils.formatearMoneda(trabajador.salarioHora) : '-'}</td>
                     <td class="acciones">
                         <button class="btn btn-primary" onclick="AppGestion.editarTrabajador('${trabajador.id}')" style="padding: 5px 10px; font-size: 0.9em;" title="Editar">
                             <i class="fas fa-edit"></i>
@@ -1846,7 +1828,7 @@ const AppGestion = {
                     const col2Width = 70;
                     
                     // Primera fila
-                    doc.text('DNI / Cédula:', x, y);
+                    doc.text('DNI:', x, y);
                     doc.text(trabajador.cedula || '-', x + col1Width, y);
                     doc.text('Nº Seguridad Social:', x + col1Width + col2Width, y);
                     doc.text(trabajador.numeroSeguridadSocial || '-', x + col1Width + col2Width + col1Width, y);
@@ -1933,7 +1915,7 @@ const AppGestion = {
                     const col1Width = 40;
                     const col2Width = 70;
                     
-                    doc.text('DNI / Cédula:', x, y);
+                    doc.text('DNI:', x, y);
                     doc.text(trabajador.cedula || '-', x + col1Width, y);
                     doc.text('Nº Seguridad Social:', x + col1Width + col2Width, y);
                     doc.text(trabajador.numeroSeguridadSocial || '-', x + col1Width + col2Width + col1Width, y);
@@ -2041,9 +2023,9 @@ const AppGestion = {
             doc.text(nombreLines, x + labelWidth, y);
             y += (nombreLines.length * lineHeight) + 2;
             
-            // DNI / Cédula
+            // DNI
             doc.setFont(undefined, 'bold');
-            doc.text('DNI / Cédula:', x, y);
+            doc.text('DNI:', x, y);
             doc.setFont(undefined, 'normal');
             const cedulaLines = doc.splitTextToSize(trabajador.cedula || '-', maxLineWidth);
             doc.text(cedulaLines, x + labelWidth, y);
@@ -2225,7 +2207,7 @@ const AppGestion = {
         let contenido = `
             <div style="max-height: 500px; overflow-y: auto;">
                 <h4>Reporte Detallado - ${trabajador.nombre}</h4>
-                <p><strong>Cédula:</strong> ${trabajador.cedula}</p>
+                <p><strong>DNI:</strong> ${trabajador.cedula}</p>
                 <hr>
         `;
         
@@ -2367,7 +2349,7 @@ const AppGestion = {
             doc.setTextColor(0, 0, 0);
             doc.text(`Trabajador: ${trabajador.nombre}`, margin, y);
             y += lineHeight;
-            doc.text(`Cédula: ${trabajador.cedula}`, margin, y);
+            doc.text(`DNI: ${trabajador.cedula}`, margin, y);
             y += lineHeight;
             doc.text(`Fecha de Generación: ${Utils.formatearFecha(new Date().toISOString())}`, margin, y);
             y += 10;
@@ -2856,7 +2838,7 @@ const AppGestion = {
                 doc.setFontSize(10);
                 doc.setFont(undefined, 'normal');
                 doc.setTextColor(0, 0, 0);
-                doc.text(`Cédula: ${trabajador.cedula}`, margin, y);
+                doc.text(`DNI: ${trabajador.cedula}`, margin, y);
                 y += lineHeight;
                 doc.text(`Salario/Hora: ${Utils.formatearMoneda(trabajador.salarioHora)}`, margin, y);
                 y += lineHeight;
