@@ -4,6 +4,7 @@
 # Pero incluir estos archivos del proyecto
 !.gitignore
 !README.md
+!index.html
 !Registro-trabajadores.html
 !styles.css
 !app.js

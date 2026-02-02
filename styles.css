@@ -52,6 +52,18 @@
     box-sizing: border-box;
 }
 
+/* Mejor tacto en móviles */
+@media (hover: none) {
+    .btn:active,
+    .btn-icon:active {
+        transform: scale(0.98);
+    }
+}
+
+button, .btn, input, select, textarea {
+    -webkit-tap-highlight-color: transparent;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, var(--verde-oscuro) 0%, var(--verde-medio) 50%, var(--verde-claro) 100%);
@@ -140,6 +152,12 @@ header h1 {
 .form-group textarea:focus {
     outline: none;
     border-color: var(--verde-medio);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--espaciado-md);
 }
 
 /* ============================================
@@ -957,15 +975,44 @@ body.tema-oscuro .tabla-trabajadores tr:hover {
     animation: spin 1s linear infinite;
 }
 
+/* ============================================
+   RESPONSIVE - TABLET Y MÓVIL
+   ============================================ */
 @media (max-width: 768px) {
+    body {
+        padding: var(--espaciado-sm);
+    }
+    
+    header {
+        padding: var(--espaciado-md);
+        margin-bottom: var(--espaciado-lg);
+    }
+    
     header h1 {
-        font-size: 2em;
+        font-size: 1.6em;
+    }
+    
+    .subtitle {
+        font-size: 1em;
+    }
+    
+    .card {
+        padding: var(--espaciado-md);
+        margin-bottom: var(--espaciado-lg);
+    }
+    
+    .card h2 {
+        font-size: 1.4em;
     }
     
     .trabajadores-grid,
     .filtros,
     .stats-grid,
     .charts-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-row {
         grid-template-columns: 1fr;
     }
     
@@ -976,18 +1023,79 @@ body.tema-oscuro .tabla-trabajadores tr:hover {
     
     .section-actions {
         flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .section-actions .search-box,
+    .section-actions .view-toggle,
+    .section-actions select,
+    .section-actions .btn {
+        width: 100%;
+        margin-left: 0 !important;
     }
     
     .search-box input {
         width: 100%;
+        min-height: 44px;
     }
     
     .chart-wrapper {
         height: 250px;
+        min-width: 0;
+    }
+    
+    .charts-container {
+        min-width: 0;
     }
     
     .header-actions {
         flex-direction: column;
+    }
+    
+    .header-actions .btn {
+        width: 100%;
+        min-height: 44px;
+    }
+    
+    .btn {
+        min-height: 44px;
+        padding: 12px var(--espaciado-lg);
+    }
+    
+    .trabajador-card .acciones {
+        flex-direction: column;
+    }
+    
+    .trabajador-card .acciones .btn {
+        width: 100%;
+    }
+    
+    .tabla-trabajadores {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .tabla-trabajadores th,
+    .tabla-trabajadores td {
+        padding: var(--espaciado-sm);
+        font-size: 0.9em;
+    }
+    
+    .tabla-trabajadores .acciones {
+        flex-wrap: wrap;
+    }
+    
+    .modal-container {
+        width: 95%;
+        max-height: 85vh;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
     }
     
     .calendario-grid {
@@ -997,5 +1105,97 @@ body.tema-oscuro .tabla-trabajadores tr:hover {
     .calendario-dia {
         min-height: 50px;
         font-size: 0.85em;
+    }
+    
+    .stat-card {
+        padding: var(--espaciado-md);
+    }
+    
+    .stat-icon {
+        font-size: 2em;
+        width: 50px;
+        height: 50px;
+    }
+    
+    .stat-value {
+        font-size: 1.6em;
+    }
+    
+    .comparativa-section {
+        padding: var(--espaciado-md) !important;
+    }
+    
+    .export-actions,
+    .filtros {
+        flex-direction: column;
+    }
+    
+    .export-actions .btn,
+    .filtros .form-group {
+        width: 100%;
+    }
+    
+    .filtros .form-group input,
+    .filtros .form-group select {
+        width: 100%;
+    }
+    
+    .paginacion {
+        padding: var(--espaciado-md);
+    }
+    
+    .paginacion-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--espaciado-xs);
+    }
+    
+    .paginacion-controls .btn {
+        min-height: 44px;
+        padding: 10px 14px;
+    }
+}
+
+/* ============================================
+   RESPONSIVE - MÓVIL PEQUEÑO
+   ============================================ */
+@media (max-width: 480px) {
+    body {
+        padding: var(--espaciado-xs);
+    }
+    
+    header h1 {
+        font-size: 1.35em;
+    }
+    
+    .card {
+        padding: var(--espaciado-sm);
+    }
+    
+    .card h2 {
+        font-size: 1.25em;
+    }
+    
+    .btn {
+        padding: 10px var(--espaciado-md);
+        font-size: 0.95em;
+    }
+    
+    .trabajador-card h3 {
+        font-size: 1.1em;
+    }
+    
+    .trabajador-info {
+        font-size: 0.9em;
+    }
+    
+    .tabla-trabajadores th,
+    .tabla-trabajadores td {
+        padding: 8px 6px;
+        font-size: 0.85em;
+    }
+    
+    .chart-wrapper {
+        height: 220px;
     }
 }
