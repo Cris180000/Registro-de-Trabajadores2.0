@@ -854,16 +854,23 @@ const AppGestion = {
         Modal.alert('Registro actualizado exitosamente', 'success');
     },
     
-    // Eliminar registro
-    eliminarRegistro(id) {
+    // Eliminar registro (trabajadorIdParaReabrir: opcional, para reabrir la lista de registros tras eliminar)
+    eliminarRegistro(id, trabajadorIdParaReabrir = null) {
         Modal.confirm(
             '¿Está seguro de eliminar este registro de horas?',
             () => {
                 this.registrosHoras = this.registrosHoras.filter(r => r.id !== id);
                 this.guardarDatos();
                 this.actualizarInterfaz();
-                document.querySelector('.modal-overlay')?.remove();
-                Modal.alert('Registro eliminado', 'success');
+                document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
+                if (trabajadorIdParaReabrir) {
+                    setTimeout(() => {
+                        this.verRegistrosTrabajador(trabajadorIdParaReabrir);
+                        Modal.alert('Registro eliminado', 'success');
+                    }, 100);
+                } else {
+                    Modal.alert('Registro eliminado', 'success');
+                }
             }
         );
     },
@@ -1624,9 +1631,14 @@ const AppGestion = {
                                 ${descuento > 0 ? `<br><small style="color: #dc3545;"><i class="fas fa-minus-circle"></i> Descuento: ${Utils.formatearMoneda(descuento)}</small>` : ''}
                                 ${r.notas ? `<br><small>${r.notas}</small>` : ''}
                             </div>
-                            <button class="btn btn-primary" onclick="AppGestion.editarRegistro('${r.id}')" style="padding: 5px 10px; font-size: 0.9em;">
-                                <i class="fas fa-edit"></i>
-                            </button>
+                            <div style="display: flex; gap: 5px;">
+                                <button class="btn btn-primary" onclick="AppGestion.editarRegistro('${r.id}')" style="padding: 5px 10px; font-size: 0.9em;" data-tooltip="Editar registro">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-danger" onclick="AppGestion.eliminarRegistro('${r.id}', '${trabajadorId}')" style="padding: 5px 10px; font-size: 0.9em;" data-tooltip="Eliminar registro">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         </div>
                     `;
                 });
@@ -1744,9 +1756,14 @@ const AppGestion = {
                             ${r.trabajo ? `<br><small><i class="fas fa-seedling"></i> Trabajo: ${r.trabajo}</small>` : ''}
                             ${r.notas ? `<br><small>${r.notas}</small>` : ''}
                         </div>
-                        <button class="btn btn-primary" onclick="AppGestion.editarRegistro('${r.id}')" style="padding: 5px 10px; font-size: 0.9em;">
-                            <i class="fas fa-edit"></i>
-                        </button>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="btn btn-primary" onclick="AppGestion.editarRegistro('${r.id}')" style="padding: 5px 10px; font-size: 0.9em;" data-tooltip="Editar registro">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-danger" onclick="AppGestion.eliminarRegistro('${r.id}')" style="padding: 5px 10px; font-size: 0.9em;" data-tooltip="Eliminar registro">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 `;
             });
