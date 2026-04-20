@@ -151,13 +151,19 @@
                     </select>
                     <input type="text" id="tipoTrabajoOtro" placeholder="Especifique el tipo de trabajo" style="margin-top: 10px; display: none;">
                 </div>
-                <div class="form-group">
-                    <label for="estado"><i class="fas fa-toggle-on"></i> Estado:</label>
-                    <select id="estado" required>
-                        <option value="activo" selected>Activo</option>
-                        <option value="inactivo">Inactivo</option>
-                        <option value="baja">Baja</option>
-                    </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tarifaHora"><i class="fas fa-euro-sign"></i> Tarifa por Hora (€):</label>
+                        <input type="number" id="tarifaHora" step="0.01" min="0" max="1000" required placeholder="Ej: 12.50">
+                    </div>
+                    <div class="form-group">
+                        <label for="estado"><i class="fas fa-toggle-on"></i> Estado:</label>
+                        <select id="estado" required>
+                            <option value="activo" selected>Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                            <option value="baja">Baja</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="notasTrabajador"><i class="fas fa-sticky-note"></i> Notas/Observaciones:</label>
@@ -234,73 +240,11 @@
                     <input type="date" id="fecha" required max="">
                 </div>
                 <div class="form-group">
-                    <label for="trabajoRegistro"><i class="fas fa-seedling"></i> Tipo de Trabajo:</label>
-                    <select id="trabajoRegistro" required>
-                        <option value="">Seleccione un tipo de trabajo</option>
-                        <option value="Aceitunas">Aceitunas</option>
-                        <option value="Espárragos">Espárragos</option>
-                        <option value="Tomates">Tomates</option>
-                        <option value="Pimientos">Pimientos</option>
-                        <option value="Fresas">Fresas</option>
-                        <option value="Lechuga">Lechuga</option>
-                        <option value="Cebolla">Cebolla</option>
-                        <option value="Ajo">Ajo</option>
-                        <option value="Otro">Otro</option>
-                    </select>
-                    <input type="text" id="trabajoRegistroOtro" placeholder="Especifique el tipo de trabajo" style="margin-top: 10px; display: none;">
+                    <label for="horas"><i class="fas fa-hourglass-half"></i> Horas Trabajadas:</label>
+                    <input type="number" id="horas" step="0.5" min="0" max="16" required placeholder="Ej: 8">
+                    <small class="form-help">Máximo 16 horas por día</small>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="salarioHora"><i class="fas fa-euro-sign"></i> Salario por Hora (€):</label>
-                        <input type="number" id="salarioHora" step="0.01" min="0" max="1000" required placeholder="Ej: 15.50">
-                    </div>
-                    <div class="form-group">
-                        <label for="salarioHoraExtra"><i class="fas fa-clock"></i> Salario Hora Extra (€):</label>
-                        <input type="number" id="salarioHoraExtra" step="0.01" min="0" max="1000" placeholder="Ej: 23.25 (opcional)">
-                        <small class="form-help">Dejar vacío para usar salario normal × 1.5</small>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="horas"><i class="fas fa-hourglass-half"></i> Horas Normales:</label>
-                        <input type="number" id="horas" step="0.5" min="0" max="16" required placeholder="Ej: 8">
-                        <small class="form-help">Máximo 16 horas por día</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="horasExtras"><i class="fas fa-clock"></i> Horas Extras:</label>
-                        <input type="number" id="horasExtras" step="0.5" min="0" max="8" value="0" placeholder="Ej: 2">
-                        <small class="form-help">Horas adicionales con tarifa extra</small>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="bonificacion"><i class="fas fa-gift"></i> Bonificación (€):</label>
-                        <input type="number" id="bonificacion" step="0.01" min="0" value="0" placeholder="Ej: 50.00">
-                        <small class="form-help">Pago adicional opcional</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="descuento"><i class="fas fa-minus-circle"></i> Descuento (€):</label>
-                        <input type="number" id="descuento" step="0.01" min="0" value="0" placeholder="Ej: 20.00">
-                        <small class="form-help">Deducción opcional</small>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="tipoRegistro"><i class="fas fa-calendar-alt"></i> Tipo de Registro:</label>
-                    <select id="tipoRegistro">
-                        <option value="normal" selected>Día Normal</option>
-                        <option value="vacaciones">Vacaciones</option>
-                        <option value="día_libre">Día Libre</option>
-                        <option value="festivo">Festivo</option>
-                        <option value="ausencia">Ausencia</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="notas"><i class="fas fa-sticky-note"></i> Notas (opcional):</label>
-                    <textarea id="notas" rows="3" placeholder="Observaciones sobre el trabajo realizado..."></textarea>
-                </div>
-                <button type="submit" class="btn btn-success" data-tooltip="Guardar registro de horas (Ctrl+S)">
-                    <i class="fas fa-save"></i> Registrar Horas
-                </button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Registrar Horas</button>
             </form>
         </section>
 

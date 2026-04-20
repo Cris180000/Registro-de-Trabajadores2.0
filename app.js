@@ -39,6 +39,13 @@ const AppGestion = {
         if (trabajadoresGuardados) {
             try {
                 this.trabajadores = JSON.parse(trabajadoresGuardados);
+                // Migración: asegurar que todos los trabajadores tengan tarifaHora
+                this.trabajadores = this.trabajadores.map(t => {
+                    if (!t.tarifaHora) {
+                        t.tarifaHora = 0;
+                    }
+                    return t;
+                });
             } catch (e) {
                 console.error('Error al cargar trabajadores:', e);
                 this.trabajadores = [];
@@ -48,12 +55,28 @@ const AppGestion = {
         if (registrosGuardados) {
             try {
                 this.registrosHoras = JSON.parse(registrosGuardados);
+                // Migración: convertir registros antiguos a la nueva estructura
+                this.registrosHoras = this.registrosHoras.map(r => {
+                    if (r.salarioHora && !r.tarifaHora) {
+                        // Registro antiguo - migrar a nueva estructura
+                        return {
+                            id: r.id,
+                            trabajadorId: r.trabajadorId,
+                            fecha: r.fecha,
+                            horas: r.horas || 0,
+                            tarifaHora: r.salarioHora,
+                            sueldoTotal: (r.horas || 0) * r.salarioHora,
+                            fechaRegistro: r.fechaRegistro || new Date().toISOString()
+                        };
+                    }
+                    return r;
+                });
             } catch (e) {
                 console.error('Error al cargar registros:', e);
                 this.registrosHoras = [];
             }
         }
-        
+
         if (tiposTrabajoGuardados) {
             try {
                 this.tiposTrabajo = JSON.parse(tiposTrabajoGuardados);
@@ -290,6 +313,7 @@ const AppGestion = {
             const fechaContratacion = document.getElementById('fechaContratacion')?.value || new Date().toISOString().split('T')[0];
             const tipoTrabajo = document.getElementById('tipoTrabajo')?.value;
             const tipoTrabajoOtro = document.getElementById('tipoTrabajoOtro')?.value.trim() || '';
+            const tarifaHora = document.getElementById('tarifaHora')?.value;
             const estado = document.getElementById('estado')?.value || 'activo';
             const notas = document.getElementById('notasTrabajador')?.value.trim() || '';
             
@@ -332,13 +356,18 @@ const AppGestion = {
                 Modal.alert('Por favor seleccione un tipo de trabajo', 'error');
                 return;
             }
-            
+
+            if (!tarifaHora || parseFloat(tarifaHora) <= 0) {
+                Modal.alert('Por favor ingrese una tarifa horaria válida', 'error');
+                return;
+            }
+
             const trabajoFinal = tipoTrabajo === 'Otro' ? tipoTrabajoOtro : tipoTrabajo;
             if (tipoTrabajo === 'Otro' && !tipoTrabajoOtro) {
                 Modal.alert('Por favor especifique el tipo de trabajo', 'error');
                 return;
             }
-            
+
             const trabajador = {
                 id: Utils.generarId(),
                 nombre: nombre,
@@ -350,6 +379,7 @@ const AppGestion = {
                 fechaNacimiento: fechaNacimiento || '',
                 fechaContratacion: fechaContratacion,
                 tipoTrabajo: trabajoFinal,
+                tarifaHora: parseFloat(tarifaHora),
                 estado: estado || 'activo',
                 notas: notas || '',
                 fechaRegistro: new Date().toISOString()
@@ -437,6 +467,10 @@ const AppGestion = {
                     <input type="text" id="editTipoTrabajoOtro" value="${esOtro ? trabajoActual : ''}" placeholder="Especifique el tipo de trabajo" class="form-control" style="margin-top: 10px; display: ${esOtro ? 'block' : 'none'};">
                 </div>
                 <div class="form-group">
+                    <label>Tarifa por Hora (€):</label>
+                    <input type="number" id="editTarifaHora" value="${trabajador.tarifaHora || ''}" step="0.01" min="0" max="1000" required class="form-control" placeholder="Ej: 12.50">
+                </div>
+                <div class="form-group">
                     <label>Estado:</label>
                     <select id="editEstado" required class="form-control">
                         <option value="activo" ${(trabajador.estado || 'activo') === 'activo' ? 'selected' : ''}>Activo</option>
@@ -483,6 +517,7 @@ const AppGestion = {
         const fechaContratacion = document.getElementById('editFechaContratacion').value;
         const tipoTrabajo = document.getElementById('editTipoTrabajo').value;
         const tipoTrabajoOtro = document.getElementById('editTipoTrabajoOtro').value.trim();
+        const tarifaHora = document.getElementById('editTarifaHora').value;
         const estado = document.getElementById('editEstado').value;
         const notas = document.getElementById('editNotasTrabajador').value.trim();
         
@@ -509,13 +544,18 @@ const AppGestion = {
             Modal.alert('Por favor seleccione un tipo de trabajo', 'error');
             return;
         }
-        
+
+        if (!tarifaHora || parseFloat(tarifaHora) <= 0) {
+            Modal.alert('Por favor ingrese una tarifa horaria válida', 'error');
+            return;
+        }
+
         const trabajoFinal = tipoTrabajo === 'Otro' ? tipoTrabajoOtro : tipoTrabajo;
         if (tipoTrabajo === 'Otro' && !tipoTrabajoOtro) {
             Modal.alert('Por favor especifique el tipo de trabajo', 'error');
             return;
         }
-        
+
         const trabajador = this.trabajadores.find(t => t.id === id);
         if (trabajador) {
             trabajador.nombre = nombre;
@@ -527,6 +567,7 @@ const AppGestion = {
             trabajador.fechaNacimiento = fechaNacimiento || '';
             trabajador.fechaContratacion = fechaContratacion || '';
             trabajador.tipoTrabajo = trabajoFinal;
+            trabajador.tarifaHora = parseFloat(tarifaHora);
             trabajador.estado = estado || 'activo';
             trabajador.notas = notas || '';
             
@@ -560,119 +601,76 @@ const AppGestion = {
     registrarHoras() {
         const trabajadorId = document.getElementById('trabajadorSelect').value;
         const fecha = document.getElementById('fecha').value;
-        const trabajo = document.getElementById('trabajoRegistro').value;
-        const trabajoOtro = document.getElementById('trabajoRegistroOtro').value.trim();
-        const salarioHora = document.getElementById('salarioHora').value;
-        const salarioHoraExtra = document.getElementById('salarioHoraExtra').value;
         const horas = document.getElementById('horas').value;
-        const horasExtras = document.getElementById('horasExtras').value || '0';
-        const bonificacion = document.getElementById('bonificacion').value || '0';
-        const descuento = document.getElementById('descuento').value || '0';
-        const tipoRegistro = document.getElementById('tipoRegistro').value;
-        const notas = document.getElementById('notas').value.trim();
-        
+
         if (!trabajadorId) {
             Modal.alert('Por favor seleccione un trabajador', 'warning');
             return;
         }
-        
-        if (!trabajo) {
-            Modal.alert('Por favor seleccione un tipo de trabajo', 'warning');
+
+        const trabajador = this.trabajadores.find(t => t.id === trabajadorId);
+        if (!trabajador) {
+            Modal.alert('Trabajador no encontrado', 'error');
             return;
         }
-        
-        const trabajoFinal = trabajo === 'Otro' ? trabajoOtro : trabajo;
-        if (trabajo === 'Otro' && !trabajoOtro) {
-            Modal.alert('Por favor especifique el tipo de trabajo', 'warning');
+
+        if (!trabajador.tarifaHora || trabajador.tarifaHora <= 0) {
+            Modal.alert('El trabajador no tiene tarifa horaria configurada', 'error');
             return;
         }
-        
-        // Mostrar carga
+
         this.mostrarCarga('Registrando horas...');
-        
+
         setTimeout(() => {
-            // Validaciones
             const valFecha = Validaciones.validarFecha(fecha);
             if (!valFecha.valido) {
                 this.ocultarCarga();
                 Modal.alert(valFecha.mensaje, 'error');
                 return;
             }
-            
-            // Permitir fechas futuras para vacaciones y días libres
-            if (tipoRegistro === 'normal' || tipoRegistro === 'festivo') {
-                const valFechaNoFutura = Validaciones.validarFechaNoFutura(fecha);
-                if (!valFechaNoFutura.valido) {
-                    this.ocultarCarga();
-                    Modal.alert(valFechaNoFutura.mensaje, 'error');
-                    return;
-                }
-            }
-            
-            if (tipoRegistro === 'normal' || tipoRegistro === 'festivo') {
-                const valHoras = Validaciones.validarHorasMaximas(horas);
-                if (!valHoras.valido) {
-                    this.ocultarCarga();
-                    Modal.alert(valHoras.mensaje, 'error');
-                    return;
-                }
-            }
-            
-            // Validar salario
-            const valSalario = Validaciones.validarSalario(salarioHora);
-            if (!valSalario.valido) {
+
+            const valFechaNoFutura = Validaciones.validarFechaNoFutura(fecha);
+            if (!valFechaNoFutura.valido) {
                 this.ocultarCarga();
-                Modal.alert(valSalario.mensaje, 'error');
+                Modal.alert(valFechaNoFutura.mensaje, 'error');
                 return;
             }
-            
-            // Solo validar duplicado para registros normales
-            if (tipoRegistro === 'normal' || tipoRegistro === 'festivo') {
-                const valDuplicado = Validaciones.validarRegistroDuplicado(trabajadorId, fecha);
-                if (!valDuplicado.valido) {
-                    this.ocultarCarga();
-                    Modal.alert(valDuplicado.mensaje, 'error');
-                    return;
-                }
+
+            const valHoras = Validaciones.validarHorasMaximas(horas);
+            if (!valHoras.valido) {
+                this.ocultarCarga();
+                Modal.alert(valHoras.mensaje, 'error');
+                return;
             }
-            
-            const trabajador = this.trabajadores.find(t => t.id === trabajadorId);
-            const salarioHoraNum = parseFloat(salarioHora);
-            const salarioHoraExtraNum = salarioHoraExtra ? parseFloat(salarioHoraExtra) : salarioHoraNum * 1.5;
-            
+
+            const valDuplicado = Validaciones.validarRegistroDuplicado(trabajadorId, fecha);
+            if (!valDuplicado.valido) {
+                this.ocultarCarga();
+                Modal.alert(valDuplicado.mensaje, 'error');
+                return;
+            }
+
+            const horasNum = parseFloat(horas) || 0;
+            const tarifaHora = parseFloat(trabajador.tarifaHora);
+            const sueldoTotal = horasNum * tarifaHora;
+
             const registro = {
                 id: Utils.generarId(),
                 trabajadorId: trabajadorId,
                 fecha: fecha,
-                trabajo: trabajoFinal,
-                salarioHora: salarioHoraNum,
-                salarioHoraExtra: salarioHoraExtraNum,
-                horas: parseFloat(horas) || 0,
-                horasExtras: parseFloat(horasExtras) || 0,
-                bonificacion: parseFloat(bonificacion) || 0,
-                descuento: parseFloat(descuento) || 0,
-                tipoRegistro: tipoRegistro || 'normal',
-                notas: notas || '',
+                horas: horasNum,
+                tarifaHora: tarifaHora,
+                sueldoTotal: sueldoTotal,
                 fechaRegistro: new Date().toISOString()
             };
-            
-            // Calcular sueldo total
-            const sueldoNormal = registro.horas * registro.salarioHora;
-            const sueldoExtras = registro.horasExtras * registro.salarioHoraExtra;
-            registro.sueldoTotal = sueldoNormal + sueldoExtras + registro.bonificacion - registro.descuento;
-            
+
             this.registrosHoras.push(registro);
             this.registrarCambio('registro', 'crear', registro.id, `Registro de horas creado para ${trabajador.nombre}`);
             this.guardarDatos();
             this.actualizarInterfaz();
-            
+
             document.getElementById('formRegistroHoras').reset();
             document.getElementById('fecha').valueAsDate = new Date();
-            document.getElementById('trabajoRegistroOtro').style.display = 'none';
-            document.getElementById('horasExtras').value = '0';
-            document.getElementById('bonificacion').value = '0';
-            document.getElementById('descuento').value = '0';
-            document.getElementById('salarioHoraExtra').value = '';
             this.ocultarCarga();
             Modal.alert('Horas registradas exitosamente', 'success');
         }, 300);
@@ -1264,13 +1262,13 @@ const AppGestion = {
     actualizarSelectTrabajadores() {
         const select = document.getElementById('trabajadorSelect');
         const selectFiltro = document.getElementById('trabajadorFiltro');
-        
+
         const opciones = '<option value="">Seleccione un trabajador</option>' +
             this.trabajadores.map(t => {
-                const trabajo = t.tipoTrabajo ? ` (${t.tipoTrabajo})` : '';
-                return `<option value="${t.id}">${t.nombre} - ${t.cedula}${trabajo}</option>`;
+                const tarifa = t.tarifaHora ? ` - €${Utils.formatearNumero(t.tarifaHora)}/h` : '';
+                return `<option value="${t.id}">${t.nombre}${tarifa}</option>`;
             }).join('');
-        
+
         if (select) select.innerHTML = opciones;
         if (selectFiltro) {
             selectFiltro.innerHTML = '<option value="">Todos los trabajadores</option>' +
