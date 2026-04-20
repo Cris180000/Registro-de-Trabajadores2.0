@@ -1321,12 +1321,12 @@ const AppGestion = {
     
     // Actualizar checklist de trabajadores y select de filtro
     actualizarSelectTrabajadores() {
-        const listaTrabajadores = document.getElementById('listaTrabajadores');
+        const listaChecklistTrabajadores = document.getElementById('listaChecklistTrabajadores');
         const selectFiltro = document.getElementById('trabajadorFiltro');
 
         // Generar checklist de trabajadores para registro
-        if (listaTrabajadores) {
-            listaTrabajadores.innerHTML = this.trabajadores
+        if (listaChecklistTrabajadores) {
+            listaChecklistTrabajadores.innerHTML = this.trabajadores
                 .filter(t => t.estado === 'activo')
                 .map(t => {
                     const tarifa = t.tarifaHora ? ` - €${Utils.formatearNumero(t.tarifaHora)}/h` : '';
