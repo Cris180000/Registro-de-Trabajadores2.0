@@ -3,6 +3,7 @@
 
 # Pero incluir estos archivos del proyecto
 !.gitignore
+!CLAUDE.md
 !README.md
 !index.html
 !Registro-trabajadores.html
