@@ -230,10 +230,18 @@
             <h2><i class="fas fa-clock"></i> Registrar Horas Trabajadas</h2>
             <form id="formRegistroHoras">
                 <div class="form-group">
-                    <label for="trabajadorSelect"><i class="fas fa-user"></i> Trabajador:</label>
-                    <select id="trabajadorSelect" required>
-                        <option value="">Seleccione un trabajador</option>
-                    </select>
+                    <label><i class="fas fa-users"></i> Seleccionar Trabajadores:</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button type="button" class="btn btn-secondary" id="btnSeleccionarTodos" style="font-size: 0.9em; padding: 8px 12px;">
+                            <i class="fas fa-check-square"></i> Seleccionar Todos
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="btnDeseleccionarTodos" style="font-size: 0.9em; padding: 8px 12px;">
+                            <i class="fas fa-square"></i> Deseleccionar Todos
+                        </button>
+                    </div>
+                    <div id="listaTrabajadores" class="trabajadores-checklist" style="border: 1px solid var(--gris-borde); border-radius: 5px; padding: 10px; background: var(--fondo-claro); max-height: 200px; overflow-y: auto;">
+                        <!-- Checkboxes de trabajadores se agregarán aquí -->
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="fecha"><i class="fas fa-calendar"></i> Fecha:</label>

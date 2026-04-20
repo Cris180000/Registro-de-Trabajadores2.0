@@ -597,82 +597,97 @@ const AppGestion = {
         );
     },
     
-    // Registrar horas trabajadas
+    // Registrar horas trabajadas para múltiples trabajadores
     registrarHoras() {
-        const trabajadorId = document.getElementById('trabajadorSelect').value;
+        // Obtener trabajadores seleccionados
+        const checkboxes = document.querySelectorAll('.trabajador-checkbox:checked');
+        const trabIds = Array.from(checkboxes).map(cb => cb.value);
         const fecha = document.getElementById('fecha').value;
         const horas = document.getElementById('horas').value;
 
-        if (!trabajadorId) {
-            Modal.alert('Por favor seleccione un trabajador', 'warning');
+        if (trabIds.length === 0) {
+            Modal.alert('Por favor seleccione al menos un trabajador', 'warning');
             return;
         }
 
-        const trabajador = this.trabajadores.find(t => t.id === trabajadorId);
-        if (!trabajador) {
-            Modal.alert('Trabajador no encontrado', 'error');
+        const fecha_val = Validaciones.validarFecha(fecha);
+        if (!fecha_val.valido) {
+            Modal.alert(fecha_val.mensaje, 'error');
             return;
         }
 
-        if (!trabajador.tarifaHora || trabajador.tarifaHora <= 0) {
-            Modal.alert('El trabajador no tiene tarifa horaria configurada', 'error');
+        const fechaNoFutura = Validaciones.validarFechaNoFutura(fecha);
+        if (!fechaNoFutura.valido) {
+            Modal.alert(fechaNoFutura.mensaje, 'error');
+            return;
+        }
+
+        const horasVal = Validaciones.validarHorasMaximas(horas);
+        if (!horasVal.valido) {
+            Modal.alert(horasVal.mensaje, 'error');
             return;
         }
 
         this.mostrarCarga('Registrando horas...');
 
         setTimeout(() => {
-            const valFecha = Validaciones.validarFecha(fecha);
-            if (!valFecha.valido) {
-                this.ocultarCarga();
-                Modal.alert(valFecha.mensaje, 'error');
-                return;
-            }
-
-            const valFechaNoFutura = Validaciones.validarFechaNoFutura(fecha);
-            if (!valFechaNoFutura.valido) {
-                this.ocultarCarga();
-                Modal.alert(valFechaNoFutura.mensaje, 'error');
-                return;
-            }
-
-            const valHoras = Validaciones.validarHorasMaximas(horas);
-            if (!valHoras.valido) {
-                this.ocultarCarga();
-                Modal.alert(valHoras.mensaje, 'error');
-                return;
-            }
-
-            const valDuplicado = Validaciones.validarRegistroDuplicado(trabajadorId, fecha);
-            if (!valDuplicado.valido) {
-                this.ocultarCarga();
-                Modal.alert(valDuplicado.mensaje, 'error');
-                return;
-            }
-
             const horasNum = parseFloat(horas) || 0;
-            const tarifaHora = parseFloat(trabajador.tarifaHora);
-            const sueldoTotal = horasNum * tarifaHora;
+            let registrosCreados = 0;
+            let errores = [];
 
-            const registro = {
-                id: Utils.generarId(),
-                trabajadorId: trabajadorId,
-                fecha: fecha,
-                horas: horasNum,
-                tarifaHora: tarifaHora,
-                sueldoTotal: sueldoTotal,
-                fechaRegistro: new Date().toISOString()
-            };
+            trabIds.forEach(trabajadorId => {
+                const trabajador = this.trabajadores.find(t => t.id === trabajadorId);
+                if (!trabajador) {
+                    errores.push(`${trabajador?.nombre || 'Trabajador'} no encontrado`);
+                    return;
+                }
 
-            this.registrosHoras.push(registro);
-            this.registrarCambio('registro', 'crear', registro.id, `Registro de horas creado para ${trabajador.nombre}`);
+                if (!trabajador.tarifaHora || trabajador.tarifaHora <= 0) {
+                    errores.push(`${trabajador.nombre} no tiene tarifa horaria configurada`);
+                    return;
+                }
+
+                const valDuplicado = Validaciones.validarRegistroDuplicado(trabajadorId, fecha);
+                if (!valDuplicado.valido) {
+                    errores.push(`${trabajador.nombre}: ${valDuplicado.mensaje}`);
+                    return;
+                }
+
+                const tarifaHora = parseFloat(trabajador.tarifaHora);
+                const sueldoTotal = horasNum * tarifaHora;
+
+                const registro = {
+                    id: Utils.generarId(),
+                    trabajadorId: trabajadorId,
+                    fecha: fecha,
+                    horas: horasNum,
+                    tarifaHora: tarifaHora,
+                    sueldoTotal: sueldoTotal,
+                    fechaRegistro: new Date().toISOString()
+                };
+
+                this.registrosHoras.push(registro);
+                this.registrarCambio('registro', 'crear', registro.id, `Registro de horas creado para ${trabajador.nombre}`);
+                registrosCreados++;
+            });
+
             this.guardarDatos();
             this.actualizarInterfaz();
 
             document.getElementById('formRegistroHoras').reset();
             document.getElementById('fecha').valueAsDate = new Date();
+            document.querySelectorAll('.trabajador-checkbox').forEach(cb => cb.checked = false);
             this.ocultarCarga();
-            Modal.alert('Horas registradas exitosamente', 'success');
+
+            if (registrosCreados > 0) {
+                let mensaje = `${registrosCreados} registro${registrosCreados > 1 ? 's' : ''} de hora${registrosCreados > 1 ? 's' : ''} registrado${registrosCreados > 1 ? 's' : ''} exitosamente`;
+                if (errores.length > 0) {
+                    mensaje += `.\n\nErrores:\n- ${errores.join('\n- ')}`;
+                }
+                Modal.alert(mensaje, 'success');
+            } else if (errores.length > 0) {
+                Modal.alert(`No se pudieron registrar horas:\n- ${errores.join('\n- ')}`, 'error');
+            }
         }, 300);
     },
     
@@ -1304,21 +1319,57 @@ const AppGestion = {
         this.mostrarTablaTrabajadores();
     },
     
-    // Actualizar select de trabajadores
+    // Actualizar checklist de trabajadores y select de filtro
     actualizarSelectTrabajadores() {
-        const select = document.getElementById('trabajadorSelect');
+        const listaTrabajadores = document.getElementById('listaTrabajadores');
         const selectFiltro = document.getElementById('trabajadorFiltro');
 
-        const opciones = '<option value="">Seleccione un trabajador</option>' +
-            this.trabajadores.map(t => {
-                const tarifa = t.tarifaHora ? ` - €${Utils.formatearNumero(t.tarifaHora)}/h` : '';
-                return `<option value="${t.id}">${t.nombre}${tarifa}</option>`;
-            }).join('');
+        // Generar checklist de trabajadores para registro
+        if (listaTrabajadores) {
+            listaTrabajadores.innerHTML = this.trabajadores
+                .filter(t => t.estado === 'activo')
+                .map(t => {
+                    const tarifa = t.tarifaHora ? ` - €${Utils.formatearNumero(t.tarifaHora)}/h` : '';
+                    return `
+                        <div style="padding: 8px; display: flex; align-items: center; border-bottom: 1px solid var(--gris-borde);">
+                            <input type="checkbox" class="trabajador-checkbox" value="${t.id}" id="trabajador-${t.id}" style="margin-right: 10px; cursor: pointer;">
+                            <label for="trabajador-${t.id}" style="flex: 1; cursor: pointer; margin: 0;">${t.nombre}${tarifa}</label>
+                        </div>
+                    `;
+                }).join('');
+        }
 
-        if (select) select.innerHTML = opciones;
+        // Actualizar select de filtro
         if (selectFiltro) {
             selectFiltro.innerHTML = '<option value="">Todos los trabajadores</option>' +
                 this.trabajadores.map(t => `<option value="${t.id}">${t.nombre}${t.tipoTrabajo ? ' - ' + t.tipoTrabajo : ''}</option>`).join('');
+        }
+
+        // Agregar manejadores de eventos para los botones
+        this.configurarBotonesSeleccion();
+    },
+
+    // Configurar botones de seleccionar/deseleccionar todos
+    configurarBotonesSeleccion() {
+        const btnSeleccionar = document.getElementById('btnSeleccionarTodos');
+        const btnDeseleccionar = document.getElementById('btnDeseleccionarTodos');
+
+        if (btnSeleccionar) {
+            btnSeleccionar.onclick = (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.trabajador-checkbox').forEach(checkbox => {
+                    checkbox.checked = true;
+                });
+            };
+        }
+
+        if (btnDeseleccionar) {
+            btnDeseleccionar.onclick = (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.trabajador-checkbox').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+            };
         }
     },
     
