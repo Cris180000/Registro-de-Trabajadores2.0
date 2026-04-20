@@ -680,172 +680,218 @@ const AppGestion = {
     editarRegistro(id) {
         const registro = this.registrosHoras.find(r => r.id === id);
         if (!registro) return;
-        
+
         const trabajador = this.trabajadores.find(t => t.id === registro.trabajadorId);
-        const trabajoActual = registro.trabajo || '';
-        const trabajosComunes = ['Aceitunas', 'Espárragos', 'Tomates', 'Pimientos', 'Fresas', 'Lechuga', 'Cebolla', 'Ajo', 'Otro'];
-        const esOtro = !trabajosComunes.includes(trabajoActual);
-        
-        const opcionesTrabajo = trabajosComunes.map(t => 
-            `<option value="${t}" ${trabajoActual === t ? 'selected' : ''}>${t}</option>`
-        ).join('');
-        
-        const salarioHoraActual = registro.salarioHora || (trabajador ? trabajador.salarioHora : 0);
-        const salarioHoraExtraActual = registro.salarioHoraExtra || (trabajador ? (trabajador.salarioHoraExtra || trabajador.salarioHora * 1.5) : 0);
-        
-        const contenido = `
-            <form id="formEditarRegistro">
-                <div class="form-group">
-                    <label>Trabajador:</label>
-                    <input type="text" value="${trabajador ? trabajador.nombre : 'N/A'}" disabled class="form-control">
-                </div>
-                <div class="form-group">
-                    <label>Tipo de Trabajo:</label>
-                    <select id="editTrabajoRegistro" required class="form-control">
-                        <option value="">Seleccione un tipo de trabajo</option>
-                        ${opcionesTrabajo}
-                        ${esOtro ? `<option value="Otro" selected>Otro</option>` : ''}
-                    </select>
-                    <input type="text" id="editTrabajoRegistroOtro" value="${esOtro ? trabajoActual : ''}" placeholder="Especifique el tipo de trabajo" class="form-control" style="margin-top: 10px; display: ${esOtro ? 'block' : 'none'};">
-                </div>
-                <div class="form-group">
-                    <label>Fecha:</label>
-                    <input type="date" id="editFecha" value="${registro.fecha}" required class="form-control" max="${Utils.obtenerFechaActual()}">
-                </div>
-                <div class="form-row">
+
+        // Detectar si es nuevo modelo simplificado o antiguo modelo complejo
+        const esNuevoModelo = registro.sueldoTotal !== undefined && !registro.trabajo;
+
+        let contenido;
+        if (esNuevoModelo) {
+            // Formulario simplificado para nuevo modelo
+            contenido = `
+                <form id="formEditarRegistro">
                     <div class="form-group">
-                        <label>Salario por Hora (€):</label>
-                        <input type="number" id="editSalarioHora" value="${salarioHoraActual}" step="0.01" min="0" max="1000" required class="form-control">
+                        <label>Trabajador:</label>
+                        <input type="text" value="${trabajador ? trabajador.nombre : 'N/A'}" disabled class="form-control">
                     </div>
                     <div class="form-group">
-                        <label>Salario Hora Extra (€):</label>
-                        <input type="number" id="editSalarioHoraExtra" value="${salarioHoraExtraActual}" step="0.01" min="0" max="1000" class="form-control">
+                        <label>Tarifa Horaria (€/h):</label>
+                        <input type="text" value="${Utils.formatearNumero(registro.tarifaHora)}" disabled class="form-control">
                     </div>
-                </div>
-                <div class="form-row">
                     <div class="form-group">
-                        <label>Horas Normales:</label>
+                        <label>Fecha:</label>
+                        <input type="date" id="editFecha" value="${registro.fecha}" required class="form-control" max="${Utils.obtenerFechaActual()}">
+                    </div>
+                    <div class="form-group">
+                        <label>Horas Trabajadas:</label>
                         <input type="number" id="editHoras" value="${registro.horas}" step="0.5" min="0" max="16" required class="form-control">
                     </div>
                     <div class="form-group">
-                        <label>Horas Extras:</label>
-                        <input type="number" id="editHorasExtras" value="${registro.horasExtras || 0}" step="0.5" min="0" max="8" class="form-control">
+                        <label>Sueldo Total (calculado automáticamente):</label>
+                        <input type="text" value="${Utils.formatearMoneda(registro.sueldoTotal)}" disabled class="form-control">
                     </div>
-                </div>
-                <div class="form-row">
+                </form>
+            `;
+        } else {
+            // Formulario complejo para modelo antiguo (compatibilidad)
+            const trabajoActual = registro.trabajo || '';
+            const trabajosComunes = ['Aceitunas', 'Espárragos', 'Tomates', 'Pimientos', 'Fresas', 'Lechuga', 'Cebolla', 'Ajo', 'Otro'];
+            const esOtro = !trabajosComunes.includes(trabajoActual);
+            const opcionesTrabajo = trabajosComunes.map(t =>
+                `<option value="${t}" ${trabajoActual === t ? 'selected' : ''}>${t}</option>`
+            ).join('');
+            const salarioHoraActual = registro.salarioHora || (trabajador ? trabajador.salarioHora : 0);
+            const salarioHoraExtraActual = registro.salarioHoraExtra || (trabajador ? (trabajador.salarioHoraExtra || trabajador.salarioHora * 1.5) : 0);
+
+            contenido = `
+                <form id="formEditarRegistro">
                     <div class="form-group">
-                        <label>Bonificación (€):</label>
-                        <input type="number" id="editBonificacion" value="${registro.bonificacion || 0}" step="0.01" min="0" class="form-control">
+                        <label>Trabajador:</label>
+                        <input type="text" value="${trabajador ? trabajador.nombre : 'N/A'}" disabled class="form-control">
                     </div>
                     <div class="form-group">
-                        <label>Descuento (€):</label>
-                        <input type="number" id="editDescuento" value="${registro.descuento || 0}" step="0.01" min="0" class="form-control">
+                        <label>Tipo de Trabajo:</label>
+                        <select id="editTrabajoRegistro" required class="form-control">
+                            <option value="">Seleccione un tipo de trabajo</option>
+                            ${opcionesTrabajo}
+                            ${esOtro ? `<option value="Otro" selected>Otro</option>` : ''}
+                        </select>
+                        <input type="text" id="editTrabajoRegistroOtro" value="${esOtro ? trabajoActual : ''}" placeholder="Especifique el tipo de trabajo" class="form-control" style="margin-top: 10px; display: ${esOtro ? 'block' : 'none'};">
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Notas:</label>
-                    <textarea id="editNotas" rows="3" class="form-control">${registro.notas || ''}</textarea>
-                </div>
-            </form>
-        `;
-        
+                    <div class="form-group">
+                        <label>Fecha:</label>
+                        <input type="date" id="editFecha" value="${registro.fecha}" required class="form-control" max="${Utils.obtenerFechaActual()}">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Salario por Hora (€):</label>
+                            <input type="number" id="editSalarioHora" value="${salarioHoraActual}" step="0.01" min="0" max="1000" required class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Salario Hora Extra (€):</label>
+                            <input type="number" id="editSalarioHoraExtra" value="${salarioHoraExtraActual}" step="0.01" min="0" max="1000" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Horas Normales:</label>
+                            <input type="number" id="editHoras" value="${registro.horas}" step="0.5" min="0" max="16" required class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Horas Extras:</label>
+                            <input type="number" id="editHorasExtras" value="${registro.horasExtras || 0}" step="0.5" min="0" max="8" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Bonificación (€):</label>
+                            <input type="number" id="editBonificacion" value="${registro.bonificacion || 0}" step="0.01" min="0" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Descuento (€):</label>
+                            <input type="number" id="editDescuento" value="${registro.descuento || 0}" step="0.01" min="0" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notas:</label>
+                        <textarea id="editNotas" rows="3" class="form-control">${registro.notas || ''}</textarea>
+                    </div>
+                </form>
+            `;
+        }
+
         const botones = `
             <button class="btn btn-primary" onclick="AppGestion.guardarEdicionRegistro('${id}')">Guardar</button>
             <button class="btn btn-danger" onclick="AppGestion.eliminarRegistro('${id}')">Eliminar</button>
             <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
         `;
-        
+
         const modal = Modal.mostrar('Editar Registro de Horas', contenido, { botones });
-        
-        // Configurar mostrar/ocultar campo "Otro"
-        const editTrabajoRegistro = document.getElementById('editTrabajoRegistro');
-        const editTrabajoRegistroOtro = document.getElementById('editTrabajoRegistroOtro');
-        if (editTrabajoRegistro && editTrabajoRegistroOtro) {
-            editTrabajoRegistro.addEventListener('change', (e) => {
-                editTrabajoRegistroOtro.style.display = e.target.value === 'Otro' ? 'block' : 'none';
-                if (e.target.value !== 'Otro') {
-                    editTrabajoRegistroOtro.value = '';
-                }
-            });
+
+        // Configurar mostrar/ocultar campo "Otro" solo para modelo antiguo
+        if (!esNuevoModelo) {
+            const editTrabajoRegistro = document.getElementById('editTrabajoRegistro');
+            const editTrabajoRegistroOtro = document.getElementById('editTrabajoRegistroOtro');
+            if (editTrabajoRegistro && editTrabajoRegistroOtro) {
+                editTrabajoRegistro.addEventListener('change', (e) => {
+                    editTrabajoRegistroOtro.style.display = e.target.value === 'Otro' ? 'block' : 'none';
+                    if (e.target.value !== 'Otro') {
+                        editTrabajoRegistroOtro.value = '';
+                    }
+                });
+            }
         }
     },
     
     // Guardar edición de registro
     guardarEdicionRegistro(id) {
-        const fecha = document.getElementById('editFecha').value;
-        const trabajo = document.getElementById('editTrabajoRegistro').value;
-        const trabajoOtro = document.getElementById('editTrabajoRegistroOtro').value.trim();
-        const salarioHora = document.getElementById('editSalarioHora').value;
-        const salarioHoraExtra = document.getElementById('editSalarioHoraExtra').value;
-        const horas = document.getElementById('editHoras').value;
-        const horasExtras = document.getElementById('editHorasExtras').value || '0';
-        const bonificacion = document.getElementById('editBonificacion').value || '0';
-        const descuento = document.getElementById('editDescuento').value || '0';
-        const notas = document.getElementById('editNotas').value.trim();
-        
         const registro = this.registrosHoras.find(r => r.id === id);
         if (!registro) return;
-        
-        if (!trabajo) {
-            Modal.alert('Por favor seleccione un tipo de trabajo', 'error');
-            return;
-        }
-        
-        const trabajoFinal = trabajo === 'Otro' ? trabajoOtro : trabajo;
-        if (trabajo === 'Otro' && !trabajoOtro) {
-            Modal.alert('Por favor especifique el tipo de trabajo', 'error');
-            return;
-        }
-        
-        // Validaciones
+
+        // Detectar si es nuevo modelo simplificado o antiguo modelo complejo
+        const esNuevoModelo = registro.sueldoTotal !== undefined && !registro.trabajo;
+        const fecha = document.getElementById('editFecha').value;
+        const horas = document.getElementById('editHoras').value;
+
+        // Validaciones comunes
         const valFecha = Validaciones.validarFecha(fecha);
         if (!valFecha.valido) {
             Modal.alert(valFecha.mensaje, 'error');
             return;
         }
-        
+
         const valFechaNoFutura = Validaciones.validarFechaNoFutura(fecha);
         if (!valFechaNoFutura.valido) {
             Modal.alert(valFechaNoFutura.mensaje, 'error');
             return;
         }
-        
+
         const valHoras = Validaciones.validarHorasMaximas(horas);
         if (!valHoras.valido) {
             Modal.alert(valHoras.mensaje, 'error');
             return;
         }
-        
-        const valSalario = Validaciones.validarSalario(salarioHora);
-        if (!valSalario.valido) {
-            Modal.alert(valSalario.mensaje, 'error');
-            return;
-        }
-        
+
         const valDuplicado = Validaciones.validarRegistroDuplicado(registro.trabajadorId, fecha, id);
         if (!valDuplicado.valido) {
             Modal.alert(valDuplicado.mensaje, 'error');
             return;
         }
-        
-        const salarioHoraNum = parseFloat(salarioHora);
-        const salarioHoraExtraNum = salarioHoraExtra ? parseFloat(salarioHoraExtra) : salarioHoraNum * 1.5;
-        
-        registro.fecha = fecha;
-        registro.trabajo = trabajoFinal;
-        registro.salarioHora = salarioHoraNum;
-        registro.salarioHoraExtra = salarioHoraExtraNum;
-        registro.horas = parseFloat(horas);
-        registro.horasExtras = parseFloat(horasExtras) || 0;
-        registro.bonificacion = parseFloat(bonificacion) || 0;
-        registro.descuento = parseFloat(descuento) || 0;
-        registro.notas = notas || '';
-        
-        // Recalcular sueldo total
-        const sueldoNormal = registro.horas * registro.salarioHora;
-        const sueldoExtras = registro.horasExtras * registro.salarioHoraExtra;
-        registro.sueldoTotal = sueldoNormal + sueldoExtras + registro.bonificacion - registro.descuento;
-        
+
+        if (esNuevoModelo) {
+            // Actualizar nuevo modelo simplificado
+            const horasNum = parseFloat(horas);
+            registro.fecha = fecha;
+            registro.horas = horasNum;
+            registro.sueldoTotal = horasNum * registro.tarifaHora;
+        } else {
+            // Actualizar modelo antiguo complejo (compatibilidad)
+            const trabajo = document.getElementById('editTrabajoRegistro').value;
+            const trabajoOtro = document.getElementById('editTrabajoRegistroOtro').value.trim();
+            const salarioHora = document.getElementById('editSalarioHora').value;
+            const salarioHoraExtra = document.getElementById('editSalarioHoraExtra').value;
+            const horasExtras = document.getElementById('editHorasExtras').value || '0';
+            const bonificacion = document.getElementById('editBonificacion').value || '0';
+            const descuento = document.getElementById('editDescuento').value || '0';
+            const notas = document.getElementById('editNotas').value.trim();
+
+            if (!trabajo) {
+                Modal.alert('Por favor seleccione un tipo de trabajo', 'error');
+                return;
+            }
+
+            const trabajoFinal = trabajo === 'Otro' ? trabajoOtro : trabajo;
+            if (trabajo === 'Otro' && !trabajoOtro) {
+                Modal.alert('Por favor especifique el tipo de trabajo', 'error');
+                return;
+            }
+
+            const valSalario = Validaciones.validarSalario(salarioHora);
+            if (!valSalario.valido) {
+                Modal.alert(valSalario.mensaje, 'error');
+                return;
+            }
+
+            const salarioHoraNum = parseFloat(salarioHora);
+            const salarioHoraExtraNum = salarioHoraExtra ? parseFloat(salarioHoraExtra) : salarioHoraNum * 1.5;
+
+            registro.fecha = fecha;
+            registro.trabajo = trabajoFinal;
+            registro.salarioHora = salarioHoraNum;
+            registro.salarioHoraExtra = salarioHoraExtraNum;
+            registro.horas = parseFloat(horas);
+            registro.horasExtras = parseFloat(horasExtras) || 0;
+            registro.bonificacion = parseFloat(bonificacion) || 0;
+            registro.descuento = parseFloat(descuento) || 0;
+            registro.notas = notas || '';
+
+            // Recalcular sueldo total para modelo antiguo
+            const sueldoNormal = registro.horas * registro.salarioHora;
+            const sueldoExtras = registro.horasExtras * registro.salarioHoraExtra;
+            registro.sueldoTotal = sueldoNormal + sueldoExtras + registro.bonificacion - registro.descuento;
+        }
+
         this.guardarDatos();
         this.actualizarInterfaz();
         document.querySelector('.modal-overlay')?.remove();
@@ -1362,16 +1408,8 @@ const AppGestion = {
                     };
                 }
                 resumenPorTrabajo[trabajo].horas += r.horas;
-                // Calcular sueldo incluyendo horas extras, bonificaciones y descuentos
-                // Usar salario del registro si existe, sino del trabajador (compatibilidad)
-                const salarioHora = r.salarioHora || trabajador.salarioHora || 0;
-                const salarioHoraExtra = r.salarioHoraExtra || (trabajador.salarioHoraExtra || salarioHora * 1.5);
-                const sueldoNormal = r.horas * salarioHora;
-                const horasExtras = r.horasExtras || 0;
-                const sueldoExtras = horasExtras * salarioHoraExtra;
-                const bonificacion = r.bonificacion || 0;
-                const descuento = r.descuento || 0;
-                const sueldoTotal = sueldoNormal + sueldoExtras + bonificacion - descuento;
+                // Usar sueldoTotal si existe (nuevo sistema), sino calcular (compatibilidad)
+                const sueldoTotal = r.sueldoTotal !== undefined ? r.sueldoTotal : (r.horas * (r.tarifaHora || r.salarioHora || trabajador.tarifaHora || trabajador.salarioHora || 0));
                 resumenPorTrabajo[trabajo].sueldo += sueldoTotal;
                 resumenPorTrabajo[trabajo].dias += 1;
                 resumenPorTrabajo[trabajo].trabajadores.add(trabajador.id);
@@ -1450,80 +1488,26 @@ const AppGestion = {
                 registrosFiltrados = registrosFiltrados.filter(r => (r.trabajo || 'No especificado') === trabajoFiltro);
             }
             
-            // Calcular sueldo incluyendo horas extras, bonificaciones y descuentos
             let sueldo = 0;
             const horas = registrosFiltrados.reduce((sum, r) => sum + r.horas, 0);
             registrosFiltrados.forEach(r => {
-                // Usar salario del registro si existe, sino del trabajador (compatibilidad)
-                const salarioHora = r.salarioHora || trabajador.salarioHora || 0;
-                const salarioHoraExtra = r.salarioHoraExtra || (trabajador.salarioHoraExtra || salarioHora * 1.5);
-                const sueldoNormal = r.horas * salarioHora;
-                const horasExtras = r.horasExtras || 0;
-                const sueldoExtras = horasExtras * salarioHoraExtra;
-                const bonificacion = r.bonificacion || 0;
-                const descuento = r.descuento || 0;
-                sueldo += sueldoNormal + sueldoExtras + bonificacion - descuento;
+                const sueldoTotal = r.sueldoTotal !== undefined ? r.sueldoTotal : (r.horas * (r.tarifaHora || r.salarioHora || trabajador.tarifaHora || trabajador.salarioHora || 0));
+                sueldo += sueldoTotal;
             });
-            
+
             totalGeneral += sueldo;
-            
-            // Agrupar registros por tipo de trabajo
-            const trabajosRealizados = {};
-            registrosFiltrados.forEach(r => {
-                const trabajo = r.trabajo || 'No especificado';
-                if (!trabajosRealizados[trabajo]) {
-                    trabajosRealizados[trabajo] = {
-                        horas: 0,
-                        sueldo: 0,
-                        dias: 0
-                    };
-                }
-                trabajosRealizados[trabajo].horas += r.horas;
-                // Calcular sueldo incluyendo horas extras, bonificaciones y descuentos
-                // Usar salario del registro si existe, sino del trabajador (compatibilidad)
-                const salarioHora = r.salarioHora || trabajador.salarioHora || 0;
-                const salarioHoraExtra = r.salarioHoraExtra || (trabajador.salarioHoraExtra || salarioHora * 1.5);
-                const sueldoNormal = r.horas * salarioHora;
-                const horasExtras = r.horasExtras || 0;
-                const sueldoExtras = horasExtras * salarioHoraExtra;
-                const bonificacion = r.bonificacion || 0;
-                const descuento = r.descuento || 0;
-                trabajosRealizados[trabajo].sueldo += sueldoNormal + sueldoExtras + bonificacion - descuento;
-                trabajosRealizados[trabajo].dias += 1;
-            });
-            
-            let trabajosHtml = '';
-            if (Object.keys(trabajosRealizados).length > 0) {
-                trabajosHtml = '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--gris-borde);">';
-                trabajosHtml += '<strong style="color: var(--verde-oscuro); font-size: 0.9em;"><i class="fas fa-seedling"></i> Trabajos Realizados:</strong>';
-                trabajosHtml += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px;">';
-                
-                Object.entries(trabajosRealizados).forEach(([trabajo, datos]) => {
-                    trabajosHtml += `
-                        <div style="background: var(--verde-fondo-claro); padding: 10px; border-radius: 5px; border: 1px solid var(--verde-medio);">
-                            <div style="font-weight: bold; color: var(--verde-oscuro); margin-bottom: 5px;">${trabajo}</div>
-                            <div style="font-size: 0.85em;">
-                                <div>${datos.horas.toFixed(1)}h</div>
-                                <div style="color: var(--verde-oscuro); font-weight: 600;">${Utils.formatearMoneda(datos.sueldo)}</div>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                trabajosHtml += '</div></div>';
-            }
             
             html += `
                 <div class="resumen-item">
                     <h3>${trabajador.nombre}</h3>
                     <div class="resumen-detalle">
                         <div class="resumen-detalle-item">
-                            <strong><i class="fas fa-seedling"></i> ${trabajador.tipoTrabajo || 'No especificado'}</strong>
-                            <span>Tipo de Trabajo</span>
-                        </div>
-                        <div class="resumen-detalle-item">
                             <strong>${horas.toFixed(1)}</strong>
                             <span>Horas Trabajadas</span>
+                        </div>
+                        <div class="resumen-detalle-item">
+                            <strong>${Utils.formatearNumero(trabajador.tarifaHora || 0)}€/h</strong>
+                            <span>Tarifa Horaria</span>
                         </div>
                         <div class="resumen-detalle-item">
                             <strong>${registrosFiltrados.length}</strong>
@@ -1534,7 +1518,6 @@ const AppGestion = {
                             <span>Sueldo Total</span>
                         </div>
                     </div>
-                    ${trabajosHtml}
                     <div style="margin-top: 15px;">
                         <button class="btn btn-secondary" onclick="AppGestion.verRegistrosTrabajador('${trabajador.id}')" style="padding: 8px 15px; font-size: 0.9em;">
                             <i class="fas fa-list"></i> Ver Registros
