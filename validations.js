@@ -3,9 +3,13 @@
 const Validaciones = {
     // Validar que no haya trabajador duplicado por DNI
     validarCedulaUnica(cedula, trabajadorIdExcluir = null) {
+        const cTrim = (cedula != null ? String(cedula) : '').trim();
+        if (!cTrim) {
+            return { valido: true, mensaje: '' };
+        }
         const trabajadores = JSON.parse(localStorage.getItem('trabajadores') || '[]');
-        const existe = trabajadores.some(t => 
-            t.cedula.trim().toLowerCase() === cedula.trim().toLowerCase() && 
+        const existe = trabajadores.some(t =>
+            (t.cedula != null ? String(t.cedula) : '').trim().toLowerCase() === cTrim.toLowerCase() &&
             t.id !== trabajadorIdExcluir
         );
         return {
@@ -60,9 +64,12 @@ const Validaciones = {
         };
     },
     
-    // Validar DNI
+    // Validar DNI (opcional: vacío es válido si no se usa en el formulario)
     validarCedula(cedula) {
-        const cedulaTrim = cedula.trim();
+        const cedulaTrim = (cedula != null ? String(cedula) : '').trim();
+        if (!cedulaTrim) {
+            return { valido: true, mensaje: '' };
+        }
         return {
             valido: cedulaTrim.length >= 1,
             mensaje: cedulaTrim.length < 1 ? 'El DNI no puede estar vacío' : ''
@@ -86,6 +93,17 @@ const Validaciones = {
         return {
             valido: !isNaN(fechaObj.getTime()),
             mensaje: isNaN(fechaObj.getTime()) ? 'La fecha no es válida' : ''
+        };
+    },
+    
+    // Validar importe de pago al trabajador (€)
+    validarMontoPago(monto) {
+        const n = typeof monto === 'number' ? monto : parseFloat(String(monto).replace(',', '.'));
+        return {
+            valido: !isNaN(n) && n > 0 && n <= 500000,
+            mensaje: isNaN(n) || n <= 0
+                ? 'Indique una cantidad válida mayor que 0'
+                : n > 500000 ? 'La cantidad es demasiado alta' : ''
         };
     },
     

@@ -4,6 +4,8 @@ const AppGestion = {
     // Estructura de datos
     trabajadores: [],
     registrosHoras: [],
+    /** Pagos realizados al trabajador: restan del total devengado por horas. { id, trabajadorId, fecha, monto, metodo, nota?, fechaRegistro } */
+    pagosTrabajadores: [],
     vistaActual: 'grid',
     trabajadoresFiltrados: [],
     ordenActual: 'nombre',
@@ -35,6 +37,7 @@ const AppGestion = {
         const registrosGuardados = localStorage.getItem('registrosHoras');
         const tiposTrabajoGuardados = localStorage.getItem('tiposTrabajo');
         const historialGuardado = localStorage.getItem('historialCambios');
+        const pagosGuardados = localStorage.getItem('pagosTrabajadores');
         
         if (trabajadoresGuardados) {
             try {
@@ -97,6 +100,18 @@ const AppGestion = {
                 this.historialCambios = [];
             }
         }
+
+        if (pagosGuardados) {
+            try {
+                this.pagosTrabajadores = JSON.parse(pagosGuardados);
+                if (!Array.isArray(this.pagosTrabajadores)) this.pagosTrabajadores = [];
+            } catch (e) {
+                console.error('Error al cargar pagos:', e);
+                this.pagosTrabajadores = [];
+            }
+        } else {
+            this.pagosTrabajadores = [];
+        }
         
         this.trabajadoresFiltrados = [...this.trabajadores];
         this.actualizarInterfaz();
@@ -123,6 +138,7 @@ const AppGestion = {
     guardarDatos() {
         localStorage.setItem('trabajadores', JSON.stringify(this.trabajadores));
         localStorage.setItem('registrosHoras', JSON.stringify(this.registrosHoras));
+        localStorage.setItem('pagosTrabajadores', JSON.stringify(this.pagosTrabajadores));
         localStorage.setItem('tiposTrabajo', JSON.stringify(this.tiposTrabajo));
         localStorage.setItem('historialCambios', JSON.stringify(this.historialCambios));
         this.crearBackupAutomatico();
@@ -521,10 +537,11 @@ const AppGestion = {
         if (!trabajador) return;
         
         Modal.confirm(
-            `¿Está seguro de eliminar a ${trabajador.nombre}? También se eliminarán todos sus registros de horas.`,
+            `¿Está seguro de eliminar a ${trabajador.nombre}? También se eliminarán todos sus registros de horas y pagos registrados.`,
             () => {
                 this.trabajadores = this.trabajadores.filter(t => t.id !== id);
                 this.registrosHoras = this.registrosHoras.filter(r => r.trabajadorId !== id);
+                this.pagosTrabajadores = this.pagosTrabajadores.filter(p => p.trabajadorId !== id);
                 this.guardarDatos();
                 this.trabajadoresFiltrados = [...this.trabajadores];
                 this.actualizarInterfaz();
@@ -989,6 +1006,10 @@ const AppGestion = {
                     valorA = (a.estado || 'activo').toLowerCase();
                     valorB = (b.estado || 'activo').toLowerCase();
                     break;
+                case 'pendiente':
+                    valorA = this.calcularSaldoPendienteTrabajador(a.id);
+                    valorB = this.calcularSaldoPendienteTrabajador(b.id);
+                    break;
                 default:
                     return 0;
             }
@@ -1043,6 +1064,172 @@ const AppGestion = {
     // Obtener registros de trabajador
     obtenerRegistrosTrabajador(trabajadorId) {
         return this.registrosHoras.filter(r => r.trabajadorId === trabajadorId);
+    },
+
+    obtenerPagosTrabajador(trabajadorId) {
+        return this.pagosTrabajadores.filter(p => p.trabajadorId === trabajadorId);
+    },
+
+    calcularTotalPagosTrabajador(trabajadorId) {
+        return this.obtenerPagosTrabajador(trabajadorId).reduce((sum, p) => sum + (parseFloat(p.monto) || 0), 0);
+    },
+
+    /**
+     * Pendiente = devengado (suma sueldos por horas registradas) − total pagado.
+     * Positivo: cantidad que aún debemos. Negativo: pagado de más (se compensa al registrar más horas).
+     */
+    calcularSaldoPendienteTrabajador(trabajadorId) {
+        const devengado = this.calcularSueldoTrabajador(trabajadorId);
+        const pagado = this.calcularTotalPagosTrabajador(trabajadorId);
+        return devengado - pagado;
+    },
+
+    mostrarModalRegistrarPago(trabajadorId) {
+        const trabajador = this.trabajadores.find(t => t.id === trabajadorId);
+        if (!trabajador) return;
+        const escN = (s) => String(s ?? '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        const saldo = this.calcularSaldoPendienteTrabajador(trabajadorId);
+        const ayudaSaldo = saldo >= 0
+            ? `Pendiente actual: <strong>${Utils.formatearMoneda(saldo)}</strong> (devengado por horas − ya pagado).`
+            : `Saldo: <strong style="color:#c0392b;">${Utils.formatearMoneda(saldo)}</strong> (pagado de más; al registrar horas el pendiente subirá hacia cero y luego positivo).`;
+        const hoy = Utils.obtenerFechaActual();
+        const contenido = `
+            <p style="margin-bottom:12px;">Registrar un pago a <strong>${escN(trabajador.nombre)}</strong>. Se restará del total adeudado.</p>
+            <p style="font-size:0.95em;margin-bottom:12px;">${ayudaSaldo}</p>
+            <form id="formRegistrarPago" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="pagoMonto">Cantidad pagada (€)</label>
+                    <input type="number" id="pagoMonto" class="form-control" step="0.01" min="0.01" required placeholder="Ej: 150">
+                </div>
+                <div class="form-group">
+                    <label for="pagoMetodo">Forma de pago</label>
+                    <select id="pagoMetodo" class="form-control">
+                        <option value="efectivo">Efectivo</option>
+                        <option value="transferencia">Transferencia</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="pagoFecha">Fecha del pago</label>
+                    <input type="date" id="pagoFecha" class="form-control" required value="${hoy}" max="${hoy}">
+                </div>
+                <div class="form-group">
+                    <label for="pagoNota">Nota (opcional)</label>
+                    <input type="text" id="pagoNota" class="form-control" maxlength="120" placeholder="Ej: quincena marzo">
+                </div>
+            </form>
+        `;
+        const botones = `
+            <button type="button" class="btn btn-primary" onclick="AppGestion.guardarPagoTrabajador('${trabajadorId}')">
+                <i class="fas fa-check"></i> Guardar pago
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+        `;
+        Modal.mostrar('Registrar pago', contenido, { botones });
+    },
+
+    guardarPagoTrabajador(trabajadorId) {
+        const trabajador = this.trabajadores.find(t => t.id === trabajadorId);
+        if (!trabajador) return;
+        const montoRaw = document.getElementById('pagoMonto')?.value;
+        const monto = parseFloat(String(montoRaw).replace(',', '.'));
+        const metodo = document.getElementById('pagoMetodo')?.value || 'efectivo';
+        const fecha = document.getElementById('pagoFecha')?.value || '';
+        const nota = document.getElementById('pagoNota')?.value.trim() || '';
+
+        const valM = Validaciones.validarMontoPago(monto);
+        if (!valM.valido) {
+            Modal.alert(valM.mensaje, 'error');
+            return;
+        }
+        const valF = Validaciones.validarFecha(fecha);
+        if (!valF.valido) {
+            Modal.alert(valF.mensaje, 'error');
+            return;
+        }
+        const valNoFutura = Validaciones.validarFechaNoFutura(fecha);
+        if (!valNoFutura.valido) {
+            Modal.alert(valNoFutura.mensaje, 'error');
+            return;
+        }
+
+        const pago = {
+            id: Utils.generarId(),
+            trabajadorId,
+            fecha,
+            monto,
+            metodo,
+            nota,
+            fechaRegistro: new Date().toISOString()
+        };
+        this.pagosTrabajadores.push(pago);
+        this.registrarCambio('pago', 'crear', pago.id, `Pago ${Utils.formatearMoneda(monto)} a ${trabajador.nombre} (${metodo})`);
+        this.guardarDatos();
+        this.trabajadoresFiltrados = [...this.trabajadores];
+        this.actualizarInterfaz();
+        document.querySelector('.modal-overlay')?.remove();
+        const nuevoSaldo = this.calcularSaldoPendienteTrabajador(trabajadorId);
+        let msg = `Pago registrado correctamente.\n\nNuevo pendiente: ${Utils.formatearMoneda(nuevoSaldo)}`;
+        if (nuevoSaldo < 0) {
+            msg += '\n\n(Negativo = ha pagado de más; al añadir horas el pendiente aumentará hasta quedar en positivo cuando vuelva a haber cantidad por pagar.)';
+        }
+        Modal.alert(msg, 'success');
+    },
+
+    verHistorialPagosTrabajador(trabajadorId) {
+        const trabajador = this.trabajadores.find(t => t.id === trabajadorId);
+        if (!trabajador) return;
+        const esc = (s) => String(s ?? '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        const pagos = this.obtenerPagosTrabajador(trabajadorId)
+            .slice()
+            .sort((a, b) => {
+                const df = new Date(b.fecha) - new Date(a.fecha);
+                if (df !== 0) return df;
+                return String(b.fechaRegistro || '').localeCompare(String(a.fechaRegistro || ''));
+            });
+        let lista = '';
+        if (pagos.length === 0) {
+            lista = '<p style="color:var(--gris-medio);">No hay pagos registrados.</p>';
+        } else {
+            lista = pagos.map(p => {
+                const lblMet = p.metodo === 'transferencia' ? 'Transferencia' : 'Efectivo';
+                return `
+                <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--gris-borde);padding:10px 0;gap:10px;">
+                    <div>
+                        <strong>${Utils.formatearFecha(p.fecha)}</strong> — ${Utils.formatearMoneda(p.monto)} · ${lblMet}
+                        ${p.nota ? `<br><small>${esc(p.nota)}</small>` : ''}
+                    </div>
+                    <button type="button" class="btn btn-danger" style="padding:4px 8px;font-size:0.85em;" onclick="AppGestion.eliminarPagoTrabajador('${p.id}','${trabajadorId}')" title="Eliminar pago">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>`;
+            }).join('');
+        }
+        const saldo = this.calcularSaldoPendienteTrabajador(trabajadorId);
+        const botones = `
+            <button type="button" class="btn btn-primary" onclick="document.querySelector('.modal-overlay')?.remove();AppGestion.mostrarModalRegistrarPago('${trabajadorId}')">
+                <i class="fas fa-money-bill-wave"></i> Nuevo pago
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cerrar</button>
+        `;
+        Modal.mostrar(
+            `Pagos — ${esc(trabajador.nombre)}`,
+            `<p style="margin-bottom:10px;">Pendiente actual: <strong>${Utils.formatearMoneda(saldo)}</strong></p><div style="max-height:360px;overflow-y:auto;">${lista}</div>`,
+            { botones }
+        );
+    },
+
+    eliminarPagoTrabajador(pagoId, trabajadorId) {
+        if (!this.pagosTrabajadores.some(x => x.id === pagoId)) return;
+        Modal.confirm('¿Eliminar este pago del historial?', () => {
+            this.pagosTrabajadores = this.pagosTrabajadores.filter(x => x.id !== pagoId);
+            this.registrarCambio('pago', 'eliminar', pagoId, 'Pago eliminado');
+            this.guardarDatos();
+            this.actualizarInterfaz();
+            document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
+            this.verHistorialPagosTrabajador(trabajadorId);
+        });
     },
     
     // Actualizar interfaz completa
@@ -1114,6 +1301,14 @@ const AppGestion = {
                 ? `<div class="trabajador-info"><strong><i class="fas fa-id-card"></i> DNI (dato antiguo):</strong> ${trabajador.cedula}</div>`
                 : '';
 
+            const saldoPend = this.calcularSaldoPendienteTrabajador(trabajador.id);
+            const saldoColor = saldoPend > 0 ? 'var(--verde-oscuro)' : saldoPend < 0 ? '#c0392b' : 'var(--gris-medio)';
+            const saldoTexto = saldoPend > 0
+                ? `Pendiente de pago: ${Utils.formatearMoneda(saldoPend)}`
+                : saldoPend < 0
+                    ? `Saldo: ${Utils.formatearMoneda(saldoPend)} (pagado de más)`
+                    : `Pendiente: ${Utils.formatearMoneda(0)} (al día)`;
+
             return `
                 <div class="trabajador-card">
                     <h3>${trabajador.nombre} <span class="badge badge-${estadoClass}" style="font-size: 0.7em; padding: 3px 8px;"><i class="fas ${estadoIcon}"></i> ${estado}</span></h3>
@@ -1124,7 +1319,16 @@ const AppGestion = {
                         <strong><i class="fas fa-seedling"></i> Tipo de Trabajo:</strong> ${trabajador.tipoTrabajo || 'No especificado'}
                     </div>
                     ${lineaTarifa}
+                    <div class="trabajador-info" style="font-weight:600;color:${saldoColor};">
+                        <i class="fas fa-balance-scale"></i> ${saldoTexto}
+                    </div>
                     <div class="acciones" style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-success" onclick="AppGestion.mostrarModalRegistrarPago('${trabajador.id}')" style="flex: 1; padding: 8px; min-width: 80px;">
+                            <i class="fas fa-money-bill-wave"></i> Pagar
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="AppGestion.verHistorialPagosTrabajador('${trabajador.id}')" style="flex: 1; padding: 8px; min-width: 80px;">
+                            <i class="fas fa-list-alt"></i> Pagos
+                        </button>
                         <button class="btn btn-primary" onclick="AppGestion.editarTrabajador('${trabajador.id}')" style="flex: 1; padding: 8px; min-width: 80px;">
                             <i class="fas fa-edit"></i> Editar
                         </button>
@@ -1229,6 +1433,7 @@ const AppGestion = {
                         <th onclick="AppGestion.ordenarPorColumna('trabajo')">Tipo de Trabajo</th>
                         <th onclick="AppGestion.ordenarPorColumna('tarifa')">Tarifa/h</th>
                         <th onclick="AppGestion.ordenarPorColumna('estado')">Estado</th>
+                        <th onclick="AppGestion.ordenarPorColumna('pendiente')">Pendiente</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -1240,6 +1445,8 @@ const AppGestion = {
                 ? Utils.formatearMoneda(trabajador.tarifaHora)
                 : (trabajador.salarioHora != null && trabajador.salarioHora > 0 ? Utils.formatearMoneda(trabajador.salarioHora) : '—');
             const estadoTabla = trabajador.estado || 'activo';
+            const pend = this.calcularSaldoPendienteTrabajador(trabajador.id);
+            const pendStyle = pend < 0 ? 'color:#c0392b;font-weight:600;' : pend > 0 ? 'font-weight:600;' : '';
             html += `
                 <tr>
                     <td>${trabajador.nombre}</td>
@@ -1248,7 +1455,14 @@ const AppGestion = {
                     <td>${trabajador.tipoTrabajo || 'No especificado'}</td>
                     <td>${tarifaMostrar}</td>
                     <td>${estadoTabla}</td>
+                    <td style="${pendStyle}">${Utils.formatearMoneda(pend)}</td>
                     <td class="acciones">
+                        <button type="button" class="btn btn-success" onclick="AppGestion.mostrarModalRegistrarPago('${trabajador.id}')" style="padding: 5px 10px; font-size: 0.9em;" title="Registrar pago">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="AppGestion.verHistorialPagosTrabajador('${trabajador.id}')" style="padding: 5px 10px; font-size: 0.9em;" title="Historial de pagos">
+                            <i class="fas fa-list-alt"></i>
+                        </button>
                         <button class="btn btn-primary" onclick="AppGestion.editarTrabajador('${trabajador.id}')" style="padding: 5px 10px; font-size: 0.9em;" title="Editar">
                             <i class="fas fa-edit"></i>
                         </button>
@@ -1515,6 +1729,10 @@ const AppGestion = {
             });
 
             totalGeneral += sueldo;
+
+            const devengadoTotal = this.calcularSueldoTrabajador(trabajador.id);
+            const totalPagadoHist = this.calcularTotalPagosTrabajador(trabajador.id);
+            const pendienteGlobal = this.calcularSaldoPendienteTrabajador(trabajador.id);
             
             html += `
                 <div class="resumen-item">
@@ -1534,10 +1752,28 @@ const AppGestion = {
                         </div>
                         <div class="resumen-detalle-item">
                             <strong>${Utils.formatearMoneda(sueldo)}</strong>
-                            <span>Sueldo Total</span>
+                            <span>Sueldo Total (período filtrado)</span>
+                        </div>
+                        <div class="resumen-detalle-item">
+                            <strong>${Utils.formatearMoneda(devengadoTotal)}</strong>
+                            <span>Devengado total (todas las horas)</span>
+                        </div>
+                        <div class="resumen-detalle-item">
+                            <strong>${Utils.formatearMoneda(totalPagadoHist)}</strong>
+                            <span>Total pagado</span>
+                        </div>
+                        <div class="resumen-detalle-item">
+                            <strong style="color:${pendienteGlobal < 0 ? '#c0392b' : 'inherit'}">${Utils.formatearMoneda(pendienteGlobal)}</strong>
+                            <span>Pendiente (devengado − pagos)</span>
                         </div>
                     </div>
-                    <div style="margin-top: 15px;">
+                    <div style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 8px;">
+                        <button type="button" class="btn btn-success" onclick="AppGestion.mostrarModalRegistrarPago('${trabajador.id}')" style="padding: 8px 15px; font-size: 0.9em;">
+                            <i class="fas fa-money-bill-wave"></i> Pagar
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="AppGestion.verHistorialPagosTrabajador('${trabajador.id}')" style="padding: 8px 15px; font-size: 0.9em;">
+                            <i class="fas fa-list-alt"></i> Historial pagos
+                        </button>
                         <button class="btn btn-secondary" onclick="AppGestion.verRegistrosTrabajador('${trabajador.id}')" style="padding: 8px 15px; font-size: 0.9em;">
                             <i class="fas fa-list"></i> Ver Registros
                         </button>
@@ -2869,6 +3105,7 @@ const AppGestion = {
         const backup = {
             trabajadores: this.trabajadores,
             registrosHoras: this.registrosHoras,
+            pagosTrabajadores: this.pagosTrabajadores,
             fecha: new Date().toISOString()
         };
         localStorage.setItem('backup_automatico', JSON.stringify(backup));
@@ -2899,8 +3136,9 @@ const AppGestion = {
         const backup = {
             trabajadores: this.trabajadores,
             registrosHoras: this.registrosHoras,
+            pagosTrabajadores: this.pagosTrabajadores,
             fecha: new Date().toISOString(),
-            version: '1.0'
+            version: '1.1'
         };
         Utils.exportarJSON(backup, `backup_trabajadores_${new Date().toISOString().split('T')[0]}.json`);
         document.querySelector('.modal-overlay')?.remove();
@@ -2928,6 +3166,7 @@ const AppGestion = {
                         () => {
                             this.trabajadores = datos.trabajadores;
                             this.registrosHoras = datos.registrosHoras;
+                            this.pagosTrabajadores = Array.isArray(datos.pagosTrabajadores) ? datos.pagosTrabajadores : [];
                             this.guardarDatos();
                             this.trabajadoresFiltrados = [...this.trabajadores];
                             this.actualizarInterfaz();
@@ -2950,6 +3189,7 @@ const AppGestion = {
             () => {
                 this.trabajadores = [];
                 this.registrosHoras = [];
+                this.pagosTrabajadores = [];
                 this.trabajadoresFiltrados = [];
                 this.guardarDatos();
                 this.actualizarInterfaz();

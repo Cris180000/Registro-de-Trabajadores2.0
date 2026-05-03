@@ -53,7 +53,12 @@ const ExportManager = {
                 });
                 
                 const horas = registrosTrabajador.reduce((sum, r) => sum + r.horas, 0);
-                const sueldo = horas * trabajador.salarioHora;
+                const tarifaT = parseFloat(trabajador.tarifaHora != null ? trabajador.tarifaHora : trabajador.salarioHora) || 0;
+                const sueldo = registrosTrabajador.reduce((sum, r) => {
+                    if (r.sueldoTotal !== undefined) return sum + r.sueldoTotal;
+                    const t = r.tarifaHora || r.salarioHora || tarifaT;
+                    return sum + r.horas * t;
+                }, 0);
                 totalHoras += horas;
                 totalSueldo += sueldo;
                 
@@ -61,8 +66,10 @@ const ExportManager = {
                 doc.text(`${index + 1}. ${trabajador.nombre}`, 14, y);
                 y += 8;
                 doc.setFontSize(10);
-                doc.text(`DNI: ${trabajador.cedula}`, 20, y);
-                y += 6;
+                if ((trabajador.cedula || '').trim()) {
+                    doc.text(`DNI: ${trabajador.cedula}`, 20, y);
+                    y += 6;
+                }
                 doc.text(`Horas: ${horas.toFixed(1)} | Sueldo: $${sueldo.toFixed(2)}`, 20, y);
                 y += 10;
             });
@@ -174,6 +181,7 @@ const ExportManager = {
                 if (datos.trabajadores && datos.registrosHoras) {
                     localStorage.setItem('trabajadores', JSON.stringify(datos.trabajadores));
                     localStorage.setItem('registrosHoras', JSON.stringify(datos.registrosHoras));
+                    localStorage.setItem('pagosTrabajadores', JSON.stringify(datos.pagosTrabajadores || []));
                     Modal.alert('Datos importados exitosamente', 'success');
                     if (typeof AppGestion !== 'undefined') {
                         AppGestion.cargarDatos();
