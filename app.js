@@ -304,27 +304,27 @@ const AppGestion = {
     agregarTrabajador() {
         try {
             const nombre = document.getElementById('nombre')?.value.trim();
-            const cedula = document.getElementById('cedula')?.value.trim();
-            const numeroSeguridadSocial = document.getElementById('numeroSeguridadSocial')?.value.trim() || '';
             const telefono = document.getElementById('telefono')?.value.trim() || '';
-            const email = document.getElementById('email')?.value.trim() || '';
-            const direccion = document.getElementById('direccion')?.value.trim() || '';
-            const fechaNacimiento = document.getElementById('fechaNacimiento')?.value || '';
-            const fechaContratacion = document.getElementById('fechaContratacion')?.value || new Date().toISOString().split('T')[0];
+            const fechaContratacion = document.getElementById('fechaContratacion')?.value || '';
             const tipoTrabajo = document.getElementById('tipoTrabajo')?.value;
             const tipoTrabajoOtro = document.getElementById('tipoTrabajoOtro')?.value.trim() || '';
             const tarifaHora = document.getElementById('tarifaHora')?.value;
             const estado = document.getElementById('estado')?.value || 'activo';
-            const notas = document.getElementById('notasTrabajador')?.value.trim() || '';
             
             // Validaciones básicas
             if (!nombre) {
                 Modal.alert('Por favor ingrese el nombre del trabajador', 'error');
                 return;
             }
-            
-            if (!cedula) {
-                Modal.alert('Por favor ingrese el DNI del trabajador', 'error');
+
+            if (!fechaContratacion) {
+                Modal.alert('Por favor indique la fecha de contratación', 'error');
+                return;
+            }
+
+            const valFechaContratacion = Validaciones.validarFecha(fechaContratacion);
+            if (!valFechaContratacion.valido) {
+                Modal.alert(valFechaContratacion.mensaje, 'error');
                 return;
             }
             
@@ -335,30 +335,8 @@ const AppGestion = {
                 return;
             }
             
-            const valCedula = Validaciones.validarCedula(cedula);
-            if (!valCedula.valido) {
-                Modal.alert(valCedula.mensaje, 'error');
-                return;
-            }
-            
-            const valCedulaUnica = Validaciones.validarCedulaUnica(cedula);
-            if (!valCedulaUnica.valido) {
-                Modal.alert(valCedulaUnica.mensaje, 'error');
-                return;
-            }
-            
-            if (email && !Validaciones.validarEmail(email).valido) {
-                Modal.alert(Validaciones.validarEmail(email).mensaje, 'error');
-                return;
-            }
-            
             if (!tipoTrabajo) {
                 Modal.alert('Por favor seleccione un tipo de trabajo', 'error');
-                return;
-            }
-
-            if (!tarifaHora || parseFloat(tarifaHora) <= 0) {
-                Modal.alert('Por favor ingrese una tarifa horaria válida', 'error');
                 return;
             }
 
@@ -368,20 +346,25 @@ const AppGestion = {
                 return;
             }
 
+            if (!tarifaHora || parseFloat(tarifaHora) <= 0) {
+                Modal.alert('Por favor ingrese una tarifa horaria válida mayor que 0', 'error');
+                return;
+            }
+
             const trabajador = {
                 id: Utils.generarId(),
                 nombre: nombre,
-                cedula: cedula,
-                numeroSeguridadSocial: numeroSeguridadSocial || '',
+                cedula: '',
+                numeroSeguridadSocial: '',
                 telefono: telefono || '',
-                email: email || '',
-                direccion: direccion || '',
-                fechaNacimiento: fechaNacimiento || '',
+                email: '',
+                direccion: '',
+                fechaNacimiento: '',
                 fechaContratacion: fechaContratacion,
                 tipoTrabajo: trabajoFinal,
                 tarifaHora: parseFloat(tarifaHora),
                 estado: estado || 'activo',
-                notas: notas || '',
+                notas: '',
                 fechaRegistro: new Date().toISOString()
             };
             
@@ -430,28 +413,8 @@ const AppGestion = {
                     <input type="text" id="editNombre" value="${trabajador.nombre}" required class="form-control">
                 </div>
                 <div class="form-group">
-                    <label>DNI:</label>
-                    <input type="text" id="editCedula" value="${trabajador.cedula}" required class="form-control">
-                </div>
-                <div class="form-group">
-                    <label>Número de Seguridad Social:</label>
-                    <input type="text" id="editNumeroSeguridadSocial" value="${trabajador.numeroSeguridadSocial || ''}" class="form-control" placeholder="Ej: 12/1234567/12">
-                </div>
-                <div class="form-group">
                     <label>Teléfono:</label>
                     <input type="tel" id="editTelefono" value="${trabajador.telefono || ''}" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label>Email:</label>
-                    <input type="email" id="editEmail" value="${trabajador.email || ''}" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label>Dirección:</label>
-                    <input type="text" id="editDireccion" value="${trabajador.direccion || ''}" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label>Fecha de Nacimiento:</label>
-                    <input type="date" id="editFechaNacimiento" value="${trabajador.fechaNacimiento || ''}" class="form-control">
                 </div>
                 <div class="form-group">
                     <label>Fecha de Contratación:</label>
@@ -468,7 +431,8 @@ const AppGestion = {
                 </div>
                 <div class="form-group">
                     <label>Tarifa por Hora (€):</label>
-                    <input type="number" id="editTarifaHora" value="${trabajador.tarifaHora || ''}" step="0.01" min="0" max="1000" required class="form-control" placeholder="Ej: 12.50">
+                    <input type="number" id="editTarifaHora" value="${trabajador.tarifaHora != null ? trabajador.tarifaHora : ''}" step="0.01" min="0" max="1000" required class="form-control" placeholder="Ej: 12.50">
+                    <small class="form-help">Necesaria para registrar horas y calcular sueldos.</small>
                 </div>
                 <div class="form-group">
                     <label>Estado:</label>
@@ -477,10 +441,6 @@ const AppGestion = {
                         <option value="inactivo" ${trabajador.estado === 'inactivo' ? 'selected' : ''}>Inactivo</option>
                         <option value="baja" ${trabajador.estado === 'baja' ? 'selected' : ''}>Baja</option>
                     </select>
-                </div>
-                <div class="form-group">
-                    <label>Notas/Observaciones:</label>
-                    <textarea id="editNotasTrabajador" rows="3" class="form-control">${trabajador.notas || ''}</textarea>
                 </div>
             </form>
         `;
@@ -508,35 +468,17 @@ const AppGestion = {
     // Guardar edición de trabajador
     guardarEdicionTrabajador(id) {
         const nombre = document.getElementById('editNombre').value.trim();
-        const cedula = document.getElementById('editCedula').value.trim();
-        const numeroSeguridadSocial = document.getElementById('editNumeroSeguridadSocial').value.trim();
         const telefono = document.getElementById('editTelefono').value.trim();
-        const email = document.getElementById('editEmail').value.trim();
-        const direccion = document.getElementById('editDireccion').value.trim();
-        const fechaNacimiento = document.getElementById('editFechaNacimiento').value;
         const fechaContratacion = document.getElementById('editFechaContratacion').value;
         const tipoTrabajo = document.getElementById('editTipoTrabajo').value;
         const tipoTrabajoOtro = document.getElementById('editTipoTrabajoOtro').value.trim();
         const tarifaHora = document.getElementById('editTarifaHora').value;
         const estado = document.getElementById('editEstado').value;
-        const notas = document.getElementById('editNotasTrabajador').value.trim();
         
         // Validaciones
         const valNombre = Validaciones.validarNombre(nombre);
         if (!valNombre.valido) {
             Modal.alert(valNombre.mensaje, 'error');
-            return;
-        }
-        
-        const valCedula = Validaciones.validarCedula(cedula);
-        if (!valCedula.valido) {
-            Modal.alert(valCedula.mensaje, 'error');
-            return;
-        }
-        
-        const valCedulaUnica = Validaciones.validarCedulaUnica(cedula, id);
-        if (!valCedulaUnica.valido) {
-            Modal.alert(valCedulaUnica.mensaje, 'error');
             return;
         }
         
@@ -559,17 +501,11 @@ const AppGestion = {
         const trabajador = this.trabajadores.find(t => t.id === id);
         if (trabajador) {
             trabajador.nombre = nombre;
-            trabajador.cedula = cedula;
-            trabajador.numeroSeguridadSocial = numeroSeguridadSocial || '';
             trabajador.telefono = telefono || '';
-            trabajador.email = email || '';
-            trabajador.direccion = direccion || '';
-            trabajador.fechaNacimiento = fechaNacimiento || '';
             trabajador.fechaContratacion = fechaContratacion || '';
             trabajador.tipoTrabajo = trabajoFinal;
             trabajador.tarifaHora = parseFloat(tarifaHora);
             trabajador.estado = estado || 'activo';
-            trabajador.notas = notas || '';
             
             this.guardarDatos();
             this.trabajadoresFiltrados = [...this.trabajadores];
@@ -954,9 +890,9 @@ const AppGestion = {
         
         // Aplicar búsqueda
         if (busqueda) {
-            filtrados = filtrados.filter(t => 
+            filtrados = filtrados.filter(t =>
                 t.nombre.toLowerCase().includes(busqueda) ||
-                t.cedula.toLowerCase().includes(busqueda) ||
+                (t.cedula || '').toLowerCase().includes(busqueda) ||
                 (t.numeroSeguridadSocial || '').toLowerCase().includes(busqueda) ||
                 (t.tipoTrabajo || '').toLowerCase().includes(busqueda) ||
                 (t.telefono || '').toLowerCase().includes(busqueda) ||
@@ -1035,6 +971,23 @@ const AppGestion = {
                 case 'trabajo':
                     valorA = (a.tipoTrabajo || '').toLowerCase();
                     valorB = (b.tipoTrabajo || '').toLowerCase();
+                    break;
+                case 'fechaContratacion':
+                    valorA = a.fechaContratacion || '';
+                    valorB = b.fechaContratacion || '';
+                    break;
+                case 'salario':
+                case 'tarifa':
+                    valorA = parseFloat(a.tarifaHora != null ? a.tarifaHora : a.salarioHora) || 0;
+                    valorB = parseFloat(b.tarifaHora != null ? b.tarifaHora : b.salarioHora) || 0;
+                    break;
+                case 'cedula':
+                    valorA = (a.cedula || '').toLowerCase();
+                    valorB = (b.cedula || '').toLowerCase();
+                    break;
+                case 'estado':
+                    valorA = (a.estado || 'activo').toLowerCase();
+                    valorB = (b.estado || 'activo').toLowerCase();
                     break;
                 default:
                     return 0;
@@ -1150,18 +1103,27 @@ const AppGestion = {
             const estadoClass = estado === 'activo' ? 'success' : estado === 'inactivo' ? 'warning' : 'danger';
             const estadoIcon = estado === 'activo' ? 'fa-check-circle' : estado === 'inactivo' ? 'fa-pause-circle' : 'fa-times-circle';
             
+            const tarifaNum = parseFloat(trabajador.tarifaHora != null ? trabajador.tarifaHora : trabajador.salarioHora) || 0;
+            const lineaTarifa = tarifaNum > 0
+                ? `<div class="trabajador-info"><strong><i class="fas fa-euro-sign"></i> Tarifa/h:</strong> ${Utils.formatearMoneda(tarifaNum)}</div>`
+                : `<div class="trabajador-info" style="color: var(--advertencia, #b8860b);"><i class="fas fa-info-circle"></i> Indique la tarifa por hora en <strong>Editar</strong> para registrar horas.</div>`;
+            const fechaCont = trabajador.fechaContratacion
+                ? `<div class="trabajador-info"><strong><i class="fas fa-calendar-check"></i> Contratación:</strong> ${Utils.formatearFecha(trabajador.fechaContratacion)}</div>`
+                : '';
+            const legacyDni = (trabajador.cedula || '').trim()
+                ? `<div class="trabajador-info"><strong><i class="fas fa-id-card"></i> DNI (dato antiguo):</strong> ${trabajador.cedula}</div>`
+                : '';
+
             return `
                 <div class="trabajador-card">
                     <h3>${trabajador.nombre} <span class="badge badge-${estadoClass}" style="font-size: 0.7em; padding: 3px 8px;"><i class="fas ${estadoIcon}"></i> ${estado}</span></h3>
-                    <div class="trabajador-info">
-                        <strong><i class="fas fa-id-card"></i> DNI:</strong> ${trabajador.cedula}
-                    </div>
-                    ${trabajador.numeroSeguridadSocial ? `<div class="trabajador-info"><strong><i class="fas fa-shield-alt"></i> Nº Seguridad Social:</strong> ${trabajador.numeroSeguridadSocial}</div>` : ''}
+                    ${legacyDni}
+                    ${fechaCont}
                     ${trabajador.telefono ? `<div class="trabajador-info"><strong><i class="fas fa-phone"></i> Teléfono:</strong> ${trabajador.telefono}</div>` : ''}
-                    ${trabajador.email ? `<div class="trabajador-info"><strong><i class="fas fa-envelope"></i> Email:</strong> ${trabajador.email}</div>` : ''}
                     <div class="trabajador-info">
                         <strong><i class="fas fa-seedling"></i> Tipo de Trabajo:</strong> ${trabajador.tipoTrabajo || 'No especificado'}
                     </div>
+                    ${lineaTarifa}
                     <div class="acciones" style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
                         <button class="btn btn-primary" onclick="AppGestion.editarTrabajador('${trabajador.id}')" style="flex: 1; padding: 8px; min-width: 80px;">
                             <i class="fas fa-edit"></i> Editar
@@ -1262,10 +1224,11 @@ const AppGestion = {
                 <thead>
                     <tr>
                         <th onclick="AppGestion.ordenarPorColumna('nombre')">Nombre</th>
-                        <th onclick="AppGestion.ordenarPorColumna('cedula')">DNI</th>
-                        <th>Nº Seguridad Social</th>
+                        <th onclick="AppGestion.ordenarPorColumna('fechaContratacion')">Contratación</th>
+                        <th>Teléfono</th>
                         <th onclick="AppGestion.ordenarPorColumna('trabajo')">Tipo de Trabajo</th>
-                        <th onclick="AppGestion.ordenarPorColumna('salario')">Salario/Hora</th>
+                        <th onclick="AppGestion.ordenarPorColumna('tarifa')">Tarifa/h</th>
+                        <th onclick="AppGestion.ordenarPorColumna('estado')">Estado</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -1273,13 +1236,18 @@ const AppGestion = {
         `;
         
         trabajadoresPagina.forEach(trabajador => {
+            const tarifaMostrar = trabajador.tarifaHora != null && trabajador.tarifaHora > 0
+                ? Utils.formatearMoneda(trabajador.tarifaHora)
+                : (trabajador.salarioHora != null && trabajador.salarioHora > 0 ? Utils.formatearMoneda(trabajador.salarioHora) : '—');
+            const estadoTabla = trabajador.estado || 'activo';
             html += `
                 <tr>
                     <td>${trabajador.nombre}</td>
-                    <td>${trabajador.cedula}</td>
-                    <td>${trabajador.numeroSeguridadSocial || '-'}</td>
+                    <td>${trabajador.fechaContratacion ? Utils.formatearFecha(trabajador.fechaContratacion) : '—'}</td>
+                    <td>${trabajador.telefono || '—'}</td>
                     <td>${trabajador.tipoTrabajo || 'No especificado'}</td>
-                    <td>${trabajador.salarioHora != null ? Utils.formatearMoneda(trabajador.salarioHora) : '-'}</td>
+                    <td>${tarifaMostrar}</td>
+                    <td>${estadoTabla}</td>
                     <td class="acciones">
                         <button class="btn btn-primary" onclick="AppGestion.editarTrabajador('${trabajador.id}')" style="padding: 5px 10px; font-size: 0.9em;" title="Editar">
                             <i class="fas fa-edit"></i>
@@ -1873,51 +1841,31 @@ const AppGestion = {
                     doc.setTextColor(0, 0, 0);
                     
                     let x = margin;
-                    const col1Width = 40;
-                    const col2Width = 70;
-                    
-                    // Primera fila
-                    doc.text('DNI:', x, y);
-                    doc.text(trabajador.cedula || '-', x + col1Width, y);
-                    doc.text('Nº Seguridad Social:', x + col1Width + col2Width, y);
-                    doc.text(trabajador.numeroSeguridadSocial || '-', x + col1Width + col2Width + col1Width, y);
-                    y += lineHeight;
-                    
-                    // Segunda fila
+                    const col1Width = 48;
+                    const col2Width = 62;
+                    const tarifaPdf = parseFloat(trabajador.tarifaHora != null ? trabajador.tarifaHora : trabajador.salarioHora) || 0;
+
                     doc.text('Teléfono:', x, y);
                     doc.text(trabajador.telefono || '-', x + col1Width, y);
-                    doc.text('Email:', x + col1Width + col2Width, y);
-                    const emailText = (trabajador.email || '-').substring(0, 30);
-                    doc.text(emailText, x + col1Width + col2Width + col1Width, y);
-                    y += lineHeight;
-                    
-                    // Tercera fila
-                    doc.text('Dirección:', x, y);
-                    const direccionText = (trabajador.direccion || '-').substring(0, 50);
-                    doc.text(direccionText, x + col1Width, y);
-                    y += lineHeight;
-                    
-                    // Cuarta fila
-                    doc.text('Fecha Nacimiento:', x, y);
-                    doc.text(trabajador.fechaNacimiento ? Utils.formatearFecha(trabajador.fechaNacimiento) : '-', x + col1Width, y);
-                    doc.text('Fecha Contratación:', x + col1Width + col2Width, y);
+                    doc.text('Contratación:', x + col1Width + col2Width, y);
                     doc.text(trabajador.fechaContratacion ? Utils.formatearFecha(trabajador.fechaContratacion) : '-', x + col1Width + col2Width + col1Width, y);
                     y += lineHeight;
-                    
-                    // Quinta fila
-                    doc.text('Tipo de Trabajo:', x, y);
-                    doc.text(trabajador.tipoTrabajo || '-', x + col1Width, y);
+
+                    doc.text('Tipo de trabajo:', x, y);
+                    doc.text((trabajador.tipoTrabajo || '-').substring(0, 36), x + col1Width, y);
                     doc.text('Estado:', x + col1Width + col2Width, y);
-                    const estado = (trabajador.estado || 'activo').charAt(0).toUpperCase() + (trabajador.estado || 'activo').slice(1);
-                    doc.text(estado, x + col1Width + col2Width + col1Width, y);
+                    const estadoAct = (trabajador.estado || 'activo').charAt(0).toUpperCase() + (trabajador.estado || 'activo').slice(1);
+                    doc.text(estadoAct, x + col1Width + col2Width + col1Width, y);
                     y += lineHeight;
-                    
-                    // Notas si existen
-                    if (trabajador.notas && trabajador.notas.trim()) {
-                        doc.text('Notas:', x, y);
-                        const notasLines = doc.splitTextToSize(trabajador.notas, doc.internal.pageSize.width - margin - col1Width - 10);
-                        doc.text(notasLines, x + col1Width, y);
-                        y += (notasLines.length * lineHeight);
+
+                    doc.text('Tarifa/h:', x, y);
+                    doc.text(tarifaPdf > 0 ? `${Utils.formatearMoneda(tarifaPdf)}` : '— (configurar en Editar)', x + col1Width, y);
+                    y += lineHeight;
+
+                    if ((trabajador.cedula || '').trim()) {
+                        doc.text('DNI (hist.):', x, y);
+                        doc.text(String(trabajador.cedula).substring(0, 28), x + col1Width, y);
+                        y += lineHeight;
                     }
                     
                     // Línea separadora entre trabajadores
@@ -1961,27 +1909,25 @@ const AppGestion = {
                     doc.setTextColor(0, 0, 0);
                     
                     let x = margin;
-                    const col1Width = 40;
-                    const col2Width = 70;
-                    
-                    doc.text('DNI:', x, y);
-                    doc.text(trabajador.cedula || '-', x + col1Width, y);
-                    doc.text('Nº Seguridad Social:', x + col1Width + col2Width, y);
-                    doc.text(trabajador.numeroSeguridadSocial || '-', x + col1Width + col2Width + col1Width, y);
-                    y += lineHeight;
-                    
+                    const col1Width = 48;
+                    const col2Width = 62;
+                    const tarifaIna = parseFloat(trabajador.tarifaHora != null ? trabajador.tarifaHora : trabajador.salarioHora) || 0;
+
                     doc.text('Teléfono:', x, y);
                     doc.text(trabajador.telefono || '-', x + col1Width, y);
-                    doc.text('Email:', x + col1Width + col2Width, y);
-                    const emailText = (trabajador.email || '-').substring(0, 30);
-                    doc.text(emailText, x + col1Width + col2Width + col1Width, y);
+                    doc.text('Contratación:', x + col1Width + col2Width, y);
+                    doc.text(trabajador.fechaContratacion ? Utils.formatearFecha(trabajador.fechaContratacion) : '-', x + col1Width + col2Width + col1Width, y);
                     y += lineHeight;
-                    
-                    doc.text('Tipo de Trabajo:', x, y);
-                    doc.text(trabajador.tipoTrabajo || '-', x + col1Width, y);
+
+                    doc.text('Tipo de trabajo:', x, y);
+                    doc.text((trabajador.tipoTrabajo || '-').substring(0, 36), x + col1Width, y);
                     doc.text('Estado:', x + col1Width + col2Width, y);
-                    const estado = (trabajador.estado || 'activo').charAt(0).toUpperCase() + (trabajador.estado || 'activo').slice(1);
-                    doc.text(estado, x + col1Width + col2Width + col1Width, y);
+                    const estadoIna = (trabajador.estado || 'activo').charAt(0).toUpperCase() + (trabajador.estado || 'activo').slice(1);
+                    doc.text(estadoIna, x + col1Width + col2Width + col1Width, y);
+                    y += lineHeight;
+
+                    doc.text('Tarifa/h:', x, y);
+                    doc.text(tarifaIna > 0 ? `${Utils.formatearMoneda(tarifaIna)}` : '—', x + col1Width, y);
                     y += lineHeight;
                     
                     // Línea separadora
@@ -2072,22 +2018,6 @@ const AppGestion = {
             doc.text(nombreLines, x + labelWidth, y);
             y += (nombreLines.length * lineHeight) + 2;
             
-            // DNI
-            doc.setFont(undefined, 'bold');
-            doc.text('DNI:', x, y);
-            doc.setFont(undefined, 'normal');
-            const cedulaLines = doc.splitTextToSize(trabajador.cedula || '-', maxLineWidth);
-            doc.text(cedulaLines, x + labelWidth, y);
-            y += (cedulaLines.length * lineHeight) + 2;
-            
-            // Nº Seguridad Social
-            doc.setFont(undefined, 'bold');
-            doc.text('Nº Seguridad Social:', x, y);
-            doc.setFont(undefined, 'normal');
-            const ssLines = doc.splitTextToSize(trabajador.numeroSeguridadSocial || '-', maxLineWidth);
-            doc.text(ssLines, x + labelWidth, y);
-            y += (ssLines.length * lineHeight) + 2;
-            
             // Teléfono
             doc.setFont(undefined, 'bold');
             doc.text('Teléfono:', x, y);
@@ -2095,36 +2025,7 @@ const AppGestion = {
             const telLines = doc.splitTextToSize(trabajador.telefono || '-', maxLineWidth);
             doc.text(telLines, x + labelWidth, y);
             y += (telLines.length * lineHeight) + 2;
-            
-            // Email
-            doc.setFont(undefined, 'bold');
-            doc.text('Email:', x, y);
-            doc.setFont(undefined, 'normal');
-            const emailLines = doc.splitTextToSize(trabajador.email || '-', maxLineWidth);
-            doc.text(emailLines, x + labelWidth, y);
-            y += (emailLines.length * lineHeight) + 2;
-            
-            // Dirección
-            if (trabajador.direccion) {
-                doc.setFont(undefined, 'bold');
-                doc.text('Dirección:', x, y);
-                doc.setFont(undefined, 'normal');
-                const direccionLines = doc.splitTextToSize(trabajador.direccion, maxLineWidth);
-                doc.text(direccionLines, x + labelWidth, y);
-                y += (direccionLines.length * lineHeight) + 2;
-            }
-            
-            // Fechas
-            doc.setFont(undefined, 'bold');
-            doc.text('Fecha de Nacimiento:', x, y);
-            doc.setFont(undefined, 'normal');
-            const fnLines = doc.splitTextToSize(
-                trabajador.fechaNacimiento ? Utils.formatearFecha(trabajador.fechaNacimiento) : '-',
-                maxLineWidth
-            );
-            doc.text(fnLines, x + labelWidth, y);
-            y += (fnLines.length * lineHeight) + 2;
-            
+
             doc.setFont(undefined, 'bold');
             doc.text('Fecha de Contratación:', x, y);
             doc.setFont(undefined, 'normal');
@@ -2133,7 +2034,18 @@ const AppGestion = {
                 maxLineWidth
             );
             doc.text(fcLines, x + labelWidth, y);
-            y += (fcLines.length * lineHeight) + 5;
+            y += (fcLines.length * lineHeight) + 2;
+
+            if ((trabajador.cedula || '').trim()) {
+                doc.setFont(undefined, 'bold');
+                doc.text('DNI (hist.):', x, y);
+                doc.setFont(undefined, 'normal');
+                const cedulaLines = doc.splitTextToSize(String(trabajador.cedula), maxLineWidth);
+                doc.text(cedulaLines, x + labelWidth, y);
+                y += (cedulaLines.length * lineHeight) + 2;
+            }
+
+            y += 3;
             
             // Información laboral
             if (y > pageHeight - 50) {
@@ -2170,32 +2082,15 @@ const AppGestion = {
             const estado = (trabajador.estado || 'activo').charAt(0).toUpperCase() + (trabajador.estado || 'activo').slice(1);
             const estadoLines = doc.splitTextToSize(estado, maxLineWidth);
             doc.text(estadoLines, x + labelWidth, y);
-            y += (estadoLines.length * lineHeight) + 5;
-            
-            // Notas
-            if (trabajador.notas && trabajador.notas.trim()) {
-                if (y > pageHeight - 50) {
-                    doc.addPage();
-                    y = 20;
-                }
-                
-                doc.setDrawColor(74, 124, 42);
-                doc.line(margin, y, doc.internal.pageSize.width - margin, y);
-                y += 10;
-                
-                doc.setFontSize(16);
-                doc.setFont(undefined, 'bold');
-                doc.setTextColor(45, 80, 22);
-                doc.text('NOTAS Y OBSERVACIONES', margin, y);
-                y += 10;
-                
-                doc.setFontSize(10);
-                doc.setFont(undefined, 'normal');
-                doc.setTextColor(0, 0, 0);
-                const notasLines = doc.splitTextToSize(trabajador.notas, doc.internal.pageSize.width - (margin * 2));
-                doc.text(notasLines, margin, y);
-                y += (notasLines.length * lineHeight) + 5;
-            }
+            y += (estadoLines.length * lineHeight) + 2;
+
+            const tarifaInd = parseFloat(trabajador.tarifaHora != null ? trabajador.tarifaHora : trabajador.salarioHora) || 0;
+            doc.setFont(undefined, 'bold');
+            doc.text('Tarifa por hora (€):', x, y);
+            doc.setFont(undefined, 'normal');
+            const tarifaTxt = tarifaInd > 0 ? Utils.formatearMoneda(tarifaInd) : '—';
+            doc.text(tarifaTxt, x + labelWidth, y);
+            y += lineHeight + 5;
             
             // Guardar PDF
             const nombreArchivo = `trabajador_${trabajador.nombre.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
@@ -2256,7 +2151,7 @@ const AppGestion = {
         let contenido = `
             <div style="max-height: 500px; overflow-y: auto;">
                 <h4>Reporte Detallado - ${trabajador.nombre}</h4>
-                <p><strong>DNI:</strong> ${trabajador.cedula}</p>
+                <p><strong>Teléfono:</strong> ${trabajador.telefono || '—'}</p>
                 <hr>
         `;
         
@@ -2281,7 +2176,9 @@ const AppGestion = {
             `;
             
             mesData.registros.forEach(r => {
-                const sueldo = r.horas * trabajador.salarioHora;
+                const sueldo = r.sueldoTotal !== undefined
+                    ? r.sueldoTotal
+                    : r.horas * (r.tarifaHora || r.salarioHora || trabajador.tarifaHora || trabajador.salarioHora || 0);
                 contenido += `
                     <tr>
                         <td>${Utils.formatearFecha(r.fecha)}</td>
@@ -2398,7 +2295,7 @@ const AppGestion = {
             doc.setTextColor(0, 0, 0);
             doc.text(`Trabajador: ${trabajador.nombre}`, margin, y);
             y += lineHeight;
-            doc.text(`DNI: ${trabajador.cedula}`, margin, y);
+            doc.text(`Teléfono: ${trabajador.telefono || '—'}`, margin, y);
             y += lineHeight;
             doc.text(`Fecha de Generación: ${Utils.formatearFecha(new Date().toISOString())}`, margin, y);
             y += 10;
@@ -2867,9 +2764,14 @@ const AppGestion = {
             trabajadores.forEach((trabajador, indexTrab) => {
                 const registrosTrabajador = registros.filter(r => r.trabajadorId === trabajador.id);
                 if (registrosTrabajador.length === 0) return;
-                
+
+                const tarifaTrab = parseFloat(trabajador.tarifaHora != null ? trabajador.tarifaHora : trabajador.salarioHora) || 0;
                 const horas = registrosTrabajador.reduce((sum, r) => sum + r.horas, 0);
-                const sueldo = horas * trabajador.salarioHora;
+                const sueldo = registrosTrabajador.reduce((sum, r) => {
+                    if (r.sueldoTotal !== undefined) return sum + r.sueldoTotal;
+                    const t = r.tarifaHora || r.salarioHora || tarifaTrab;
+                    return sum + r.horas * t;
+                }, 0);
                 
                 // Verificar si necesitamos nueva página
                 if (y > pageHeight - 80) {
@@ -2887,9 +2789,9 @@ const AppGestion = {
                 doc.setFontSize(10);
                 doc.setFont(undefined, 'normal');
                 doc.setTextColor(0, 0, 0);
-                doc.text(`DNI: ${trabajador.cedula}`, margin, y);
+                doc.text(`Teléfono: ${trabajador.telefono || '—'}`, margin, y);
                 y += lineHeight;
-                doc.text(`Salario/Hora: ${Utils.formatearMoneda(trabajador.salarioHora)}`, margin, y);
+                doc.text(`Tarifa/h: ${tarifaTrab > 0 ? Utils.formatearMoneda(tarifaTrab) : '—'}`, margin, y);
                 y += lineHeight;
                 doc.text(`Total Anual: ${horas.toFixed(1)} horas - ${Utils.formatearMoneda(sueldo)}`, margin, y);
                 y += 8;
@@ -2903,7 +2805,12 @@ const AppGestion = {
                         porMes[mes] = { horas: 0, sueldo: 0 };
                     }
                     porMes[mes].horas += r.horas;
-                    porMes[mes].sueldo += r.horas * trabajador.salarioHora;
+                    const tReg = r.tarifaHora || r.salarioHora || tarifaTrab;
+                    if (r.sueldoTotal !== undefined) {
+                        porMes[mes].sueldo += r.sueldoTotal;
+                    } else {
+                        porMes[mes].sueldo += r.horas * tReg;
+                    }
                 });
                 
                 // Tabla de meses
@@ -3122,11 +3029,12 @@ const AppGestion = {
         const trabajador = this.trabajadores.find(t => t.id === id);
         if (!trabajador) return;
         
+        const cedulaBase = (trabajador.cedula != null ? String(trabajador.cedula) : '').trim();
         const nuevoTrabajador = {
             ...trabajador,
             id: Utils.generarId(),
             nombre: trabajador.nombre + ' (Copia)',
-            cedula: trabajador.cedula + '_' + Date.now(),
+            cedula: cedulaBase ? `${cedulaBase}_${Date.now()}` : '',
             fechaRegistro: new Date().toISOString()
         };
         

@@ -110,46 +110,22 @@
                         <input type="text" id="nombre" required placeholder="Ej: Juan Pérez">
                     </div>
                     <div class="form-group">
-                        <label for="cedula"><i class="fas fa-id-card"></i> DNI:</label>
-                        <input type="text" id="cedula" required placeholder="Ej: 12345678A">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="numeroSeguridadSocial"><i class="fas fa-shield-alt"></i> Número de Seguridad Social:</label>
-                        <input type="text" id="numeroSeguridadSocial" placeholder="Ej: 12/1234567/12">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
                         <label for="telefono"><i class="fas fa-phone"></i> Teléfono:</label>
                         <input type="tel" id="telefono" placeholder="Ej: +34 600 123 456">
                     </div>
-                    <div class="form-group">
-                        <label for="email"><i class="fas fa-envelope"></i> Email:</label>
-                        <input type="email" id="email" placeholder="Ej: juan@email.com">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="direccion"><i class="fas fa-map-marker-alt"></i> Dirección:</label>
-                    <input type="text" id="direccion" placeholder="Ej: Calle Principal 123, Ciudad">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="fechaNacimiento"><i class="fas fa-birthday-cake"></i> Fecha de Nacimiento:</label>
-                        <input type="date" id="fechaNacimiento">
+                        <label for="fechaContratacion"><i class="fas fa-calendar-check"></i> Fecha de Contratación:</label>
+                        <input type="date" id="fechaContratacion" required max="">
                     </div>
                     <div class="form-group">
-                        <label for="fechaContratacion"><i class="fas fa-calendar-check"></i> Fecha de Contratación:</label>
-                        <input type="date" id="fechaContratacion" max="">
+                        <label for="tipoTrabajo"><i class="fas fa-seedling"></i> Tipo de Trabajo:</label>
+                        <select id="tipoTrabajo" required>
+                            <option value="">Seleccione un tipo de trabajo</option>
+                        </select>
+                        <input type="text" id="tipoTrabajoOtro" placeholder="Especifique el tipo de trabajo" style="margin-top: 10px; display: none;">
                     </div>
-                </div>
-                <div class="form-group">
-                    <label for="tipoTrabajo"><i class="fas fa-seedling"></i> Tipo de Trabajo:</label>
-                    <select id="tipoTrabajo" required>
-                        <option value="">Seleccione un tipo de trabajo</option>
-                    </select>
-                    <input type="text" id="tipoTrabajoOtro" placeholder="Especifique el tipo de trabajo" style="margin-top: 10px; display: none;">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -164,10 +140,6 @@
                             <option value="baja">Baja</option>
                         </select>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label for="notasTrabajador"><i class="fas fa-sticky-note"></i> Notas/Observaciones:</label>
-                    <textarea id="notasTrabajador" rows="3" placeholder="Información adicional sobre el trabajador..."></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary" data-tooltip="Agregar nuevo trabajador (Ctrl+N)">
                     <i class="fas fa-plus"></i> Agregar Trabajador
@@ -185,7 +157,7 @@
                     </button>
                     <div class="search-box">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="buscarTrabajador" placeholder="Buscar por nombre, DNI, Nº SS, teléfono, email..." data-tooltip="Buscar trabajadores (Ctrl+F)">
+                        <input type="text" id="buscarTrabajador" placeholder="Buscar por nombre, teléfono, tipo de trabajo..." data-tooltip="Buscar trabajadores (Ctrl+F)">
                     </div>
                     <div class="search-box" style="margin-left: 10px;">
                         <i class="fas fa-search"></i>
