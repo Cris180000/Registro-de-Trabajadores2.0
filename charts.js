@@ -110,7 +110,8 @@ const ChartsManager = {
                 const fecha = new Date(r.fecha);
                 const clave = `${fecha.getFullYear()}-${fecha.getMonth()}`;
                 if (datosPorMes[clave] !== undefined) {
-                    datosPorMes[clave] += r.horas * trabajador.salarioHora;
+                    const rate = trabajador.tarifaHora != null ? trabajador.tarifaHora : trabajador.salarioHora;
+                    datosPorMes[clave] += r.horas * (rate || 0);
                 }
             }
         });
@@ -200,7 +201,7 @@ const ChartsManager = {
             const horas = registrosMes.reduce((sum, r) => sum + r.horas, 0);
             return {
                 nombre: t.nombre,
-                sueldo: horas * t.salarioHora
+                sueldo: horas * (t.tarifaHora != null ? t.tarifaHora : (t.salarioHora || 0))
             };
         }).filter(t => t.sueldo > 0);
         
