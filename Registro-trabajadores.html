@@ -3,10 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- Ayuda a que el HTML no se quede pegado en caché del móvil (junto con ?v= en recursos) -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="theme-color" content="#2d5016">
     <meta name="mobile-web-app-capable" content="yes">
     <title>Gestión de Trabajadores Agrícolas</title>
-    <link rel="stylesheet" href="styles.css">
+    <!-- Sube v= al subir cambios a GitHub para forzar descarga nueva de CSS/JS en móviles -->
+    <link rel="stylesheet" href="styles.css?v=20260503">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -315,12 +320,12 @@
         </section>
     </div>
 
-    <!-- Scripts -->
-    <script src="utils.js"></script>
-    <script src="validations.js"></script>
-    <script src="modals.js"></script>
-    <script src="export.js"></script>
-    <script src="charts.js"></script>
-    <script src="app.js"></script>
+    <!-- Scripts (?v= igual que arriba: cambiar al desplegar) -->
+    <script src="utils.js?v=20260503"></script>
+    <script src="validations.js?v=20260503"></script>
+    <script src="modals.js?v=20260503"></script>
+    <script src="export.js?v=20260503"></script>
+    <script src="charts.js?v=20260503"></script>
+    <script src="app.js?v=20260503"></script>
 </body>
 </html>
